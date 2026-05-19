@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Nav from "@/components/Nav";
+import ExportButton from "@/components/ExportButton";
 
 export default function SettingsPage() {
   const [startDate, setStartDate] = useState("");
@@ -80,6 +81,13 @@ export default function SettingsPage() {
         >
           {saved ? "✅ 已保存" : "💾 保存设置"}
         </button>
+
+        <div className="pt-4 border-t border-gray-100">
+          <p className="text-sm font-medium text-gray-600 mb-3">📦 数据管理</p>
+          <div className="space-y-3">
+            <ExportButton />
+          </div>
+        </div>
       </div>
 
       <Nav />

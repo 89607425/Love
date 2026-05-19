@@ -35,7 +35,94 @@ function initDb(db: Database.Database) {
     INSERT OR IGNORE INTO settings (key, value) VALUES ('start_date', '');
     INSERT OR IGNORE INTO settings (key, value) VALUES ('my_name', '我');
     INSERT OR IGNORE INTO settings (key, value) VALUES ('her_name', '她');
+
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      content TEXT NOT NULL DEFAULT '',
+      author TEXT NOT NULL DEFAULT '我',
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+
+    CREATE TABLE IF NOT EXISTS wishes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL DEFAULT '',
+      description TEXT NOT NULL DEFAULT '',
+      completed INTEGER NOT NULL DEFAULT 0,
+      author TEXT NOT NULL DEFAULT '我',
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
   `);
+}
+
+export interface Message {
+  id: number;
+  content: string;
+  author: string;
+  created_at: string;
+}
+
+export function getMessages(): Message[] {
+  return getDb()
+    .prepare("SELECT * FROM messages ORDER BY created_at DESC")
+    .all() as Message[];
+}
+
+export function createMessage(data: { content: string; author: string }): Message {
+  const result = getDb()
+    .prepare("INSERT INTO messages (content, author) VALUES (?, ?)")
+    .run(data.content, data.author);
+  return getDb()
+    .prepare("SELECT * FROM messages WHERE id = ?")
+    .get(result.lastInsertRowid) as Message;
+}
+
+export function deleteMessage(id: number): boolean {
+  const result = getDb().prepare("DELETE FROM messages WHERE id = ?").run(id);
+  return result.changes > 0;
+}
+
+export interface Wish {
+  id: number;
+  title: string;
+  description: string;
+  completed: number;
+  author: string;
+  created_at: string;
+}
+
+export function getWishes(): Wish[] {
+  return getDb()
+    .prepare("SELECT * FROM wishes ORDER BY completed ASC, created_at DESC")
+    .all() as Wish[];
+}
+
+export function createWish(data: { title: string; description: string; author: string }): Wish {
+  const result = getDb()
+    .prepare("INSERT INTO wishes (title, description, author) VALUES (?, ?, ?)")
+    .run(data.title, data.description, data.author);
+  return getDb()
+    .prepare("SELECT * FROM wishes WHERE id = ?")
+    .get(result.lastInsertRowid) as Wish;
+}
+
+export function updateWish(id: number, data: { title?: string; description?: string; completed?: number; author?: string }): Wish | null {
+  const existing = getDb().prepare("SELECT * FROM wishes WHERE id = ?").get(id) as Wish | undefined;
+  if (!existing) return null;
+  getDb()
+    .prepare("UPDATE wishes SET title=?, description=?, completed=?, author=? WHERE id=?")
+    .run(
+      data.title ?? existing.title,
+      data.description ?? existing.description,
+      data.completed ?? existing.completed,
+      data.author ?? existing.author,
+      id
+    );
+  return getDb().prepare("SELECT * FROM wishes WHERE id = ?").get(id) as Wish;
+}
+
+export function deleteWish(id: number): boolean {
+  const result = getDb().prepare("DELETE FROM wishes WHERE id = ?").run(id);
+  return result.changes > 0;
 }
 
 export interface Memory {
