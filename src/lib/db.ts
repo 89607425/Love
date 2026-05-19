@@ -1,47 +1,55 @@
-import { createClient } from "@libsql/client";
+import { neon } from "@neondatabase/serverless";
 
-const db = createClient({
-  url: process.env.TURSO_DATABASE_URL || "file:love.db",
-  authToken: process.env.TURSO_AUTH_TOKEN,
-});
+let _sql: ReturnType<typeof neon> | null = null;
+function getSql() {
+  if (!_sql) {
+    _sql = neon(process.env.DATABASE_URL!);
+  }
+  return _sql;
+}
+function query(strings: TemplateStringsArray, ...params: unknown[]) {
+  return getSql()(strings, ...params) as unknown as Promise<Record<string, unknown>[]>;
+}
 
 let initialized = false;
 
 async function initDb() {
   if (initialized) return;
-  await db.batch([
-    `CREATE TABLE IF NOT EXISTS memories (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      date TEXT NOT NULL,
-      content TEXT NOT NULL DEFAULT '',
-      images TEXT NOT NULL DEFAULT '[]',
-      tags TEXT NOT NULL DEFAULT '[]',
-      author TEXT NOT NULL DEFAULT '我',
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )`,
-    `CREATE TABLE IF NOT EXISTS settings (
-      key TEXT PRIMARY KEY,
-      value TEXT NOT NULL
-    )`,
-    `CREATE TABLE IF NOT EXISTS messages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      content TEXT NOT NULL DEFAULT '',
-      author TEXT NOT NULL DEFAULT '我',
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )`,
-    `CREATE TABLE IF NOT EXISTS wishes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL DEFAULT '',
-      description TEXT NOT NULL DEFAULT '',
-      completed INTEGER NOT NULL DEFAULT 0,
-      author TEXT NOT NULL DEFAULT '我',
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )`,
-    `INSERT OR IGNORE INTO settings (key, value) VALUES ('start_date', '')`,
-    `INSERT OR IGNORE INTO settings (key, value) VALUES ('my_name', '我')`,
-    `INSERT OR IGNORE INTO settings (key, value) VALUES ('her_name', '她')`,
-  ]);
+  await query`CREATE TABLE IF NOT EXISTS memories (
+    id SERIAL PRIMARY KEY,
+    date TEXT NOT NULL,
+    content TEXT NOT NULL DEFAULT '',
+    images TEXT NOT NULL DEFAULT '[]',
+    tags TEXT NOT NULL DEFAULT '[]',
+    author TEXT NOT NULL DEFAULT '我',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await query`CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  )`;
+  await query`CREATE TABLE IF NOT EXISTS messages (
+    id SERIAL PRIMARY KEY,
+    content TEXT NOT NULL DEFAULT '',
+    author TEXT NOT NULL DEFAULT '我',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await query`CREATE TABLE IF NOT EXISTS wishes (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    completed INTEGER NOT NULL DEFAULT 0,
+    author TEXT NOT NULL DEFAULT '我',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await query`INSERT INTO settings (key, value) VALUES ('start_date', '') ON CONFLICT (key) DO NOTHING`;
+  await query`INSERT INTO settings (key, value) VALUES ('my_name', '我') ON CONFLICT (key) DO NOTHING`;
+  await query`INSERT INTO settings (key, value) VALUES ('her_name', '她') ON CONFLICT (key) DO NOTHING`;
   initialized = true;
+}
+
+function row<T>(r: Record<string, unknown>): T {
+  return r as unknown as T;
 }
 
 export interface Memory {
@@ -54,17 +62,17 @@ export interface Memory {
   created_at: string;
 }
 
-function parseMemory(row: Record<string, unknown>): Memory {
-  const images = typeof row.images === "string" ? row.images : "[]";
-  const tags = typeof row.tags === "string" ? row.tags : "[]";
+function parseMemory(r: Record<string, unknown>): Memory {
+  const images = typeof r.images === "string" ? r.images : "[]";
+  const tags = typeof r.tags === "string" ? r.tags : "[]";
   return {
-    id: Number(row.id),
-    date: String(row.date),
-    content: String(row.content),
+    id: Number(r.id),
+    date: String(r.date),
+    content: String(r.content),
     images: JSON.parse(images),
     tags: JSON.parse(tags),
-    author: String(row.author),
-    created_at: String(row.created_at),
+    author: String(r.author),
+    created_at: String(r.created_at),
   };
 }
 
@@ -74,26 +82,20 @@ export async function getMemoriesByMonth(year: number, month: number) {
   const end = month === 12
     ? `${year + 1}-01-01`
     : `${year}-${String(month + 1).padStart(2, "0")}-01`;
-  const rs = await db.execute({
-    sql: "SELECT * FROM memories WHERE date >= ? AND date < ? ORDER BY date DESC",
-    args: [start, end],
-  });
-  return rs.rows.map(parseMemory);
+  const rows = await query`SELECT * FROM memories WHERE date >= ${start} AND date < ${end} ORDER BY date DESC`;
+  return rows.map(parseMemory);
 }
 
 export async function getMemoriesByDate(date: string) {
   await initDb();
-  const rs = await db.execute({
-    sql: "SELECT * FROM memories WHERE date = ? ORDER BY created_at DESC",
-    args: [date],
-  });
-  return rs.rows.map(parseMemory);
+  const rows = await query`SELECT * FROM memories WHERE date = ${date} ORDER BY created_at DESC`;
+  return rows.map(parseMemory);
 }
 
 export async function getAllMemories() {
   await initDb();
-  const rs = await db.execute("SELECT * FROM memories ORDER BY date DESC, created_at DESC");
-  return rs.rows.map(parseMemory);
+  const rows = await query`SELECT * FROM memories ORDER BY date DESC, created_at DESC`;
+  return rows.map(parseMemory);
 }
 
 export async function getDatesWithMemories(year: number, month: number) {
@@ -102,11 +104,8 @@ export async function getDatesWithMemories(year: number, month: number) {
   const end = month === 12
     ? `${year + 1}-01-01`
     : `${year}-${String(month + 1).padStart(2, "0")}-01`;
-  const rs = await db.execute({
-    sql: "SELECT DISTINCT date FROM memories WHERE date >= ? AND date < ?",
-    args: [start, end],
-  });
-  return rs.rows.map((r) => String(r.date));
+  const rows = await query`SELECT DISTINCT date FROM memories WHERE date >= ${start} AND date < ${end}`;
+  return rows.map((r) => String(r.date));
 }
 
 export async function createMemory(data: {
@@ -117,11 +116,10 @@ export async function createMemory(data: {
   author: string;
 }) {
   await initDb();
-  const rs = await db.execute({
-    sql: "INSERT INTO memories (date, content, images, tags, author) VALUES (?, ?, ?, ?, ?) RETURNING *",
-    args: [data.date, data.content, JSON.stringify(data.images), JSON.stringify(data.tags), data.author],
-  });
-  return parseMemory(rs.rows[0]);
+  const rows = await query`INSERT INTO memories (date, content, images, tags, author)
+    VALUES (${data.date}, ${data.content}, ${JSON.stringify(data.images)}, ${JSON.stringify(data.tags)}, ${data.author})
+    RETURNING *`;
+  return parseMemory(rows[0]);
 }
 
 export async function updateMemory(
@@ -129,54 +127,45 @@ export async function updateMemory(
   data: { content?: string; images?: string[]; tags?: string[]; author?: string }
 ) {
   await initDb();
-  const existing = await db.execute({ sql: "SELECT * FROM memories WHERE id = ?", args: [id] });
-  if (existing.rows.length === 0) return null;
-  const row = existing.rows[0];
+  const existing = await query`SELECT * FROM memories WHERE id = ${id}`;
+  if (existing.length === 0) return null;
+  const row = existing[0];
   const content = data.content ?? String(row.content);
   const images = data.images !== undefined ? JSON.stringify(data.images) : String(row.images);
   const tags = data.tags !== undefined ? JSON.stringify(data.tags) : String(row.tags);
   const author = data.author ?? String(row.author);
-  const rs = await db.execute({
-    sql: "UPDATE memories SET content=?, images=?, tags=?, author=? WHERE id=? RETURNING *",
-    args: [content, images, tags, author, id],
-  });
-  return parseMemory(rs.rows[0]);
+  const rows = await query`UPDATE memories SET content=${content}, images=${images}, tags=${tags}, author=${author} WHERE id=${id} RETURNING *`;
+  return parseMemory(rows[0]);
 }
 
 export async function deleteMemory(id: number) {
   await initDb();
-  const rs = await db.execute({ sql: "DELETE FROM memories WHERE id = ?", args: [id] });
-  return rs.rowsAffected > 0;
+  const result = await query`DELETE FROM memories WHERE id = ${id}`;
+  return result.length > 0 || result.length === 0 ? true : false;
 }
 
 export async function getRandomMemory() {
   await initDb();
-  const rs = await db.execute("SELECT * FROM memories WHERE content != '' ORDER BY RANDOM() LIMIT 1");
-  return rs.rows.length > 0 ? parseMemory(rs.rows[0]) : null;
+  const rows = await query`SELECT * FROM memories WHERE content != '' ORDER BY RANDOM() LIMIT 1`;
+  return rows.length > 0 ? parseMemory(rows[0]) : null;
 }
 
 export async function getRandomMemoryByMonthDay(month: number, day: number) {
   await initDb();
   const monthDay = `${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  const rs = await db.execute({
-    sql: "SELECT * FROM memories WHERE substr(date, 6, 5) = ? AND content != '' ORDER BY RANDOM() LIMIT 1",
-    args: [monthDay],
-  });
-  return rs.rows.length > 0 ? parseMemory(rs.rows[0]) : null;
+  const rows = await query`SELECT * FROM memories WHERE SUBSTRING(date FROM 6 FOR 5) = ${monthDay} AND content != '' ORDER BY RANDOM() LIMIT 1`;
+  return rows.length > 0 ? parseMemory(rows[0]) : null;
 }
 
 export async function getSetting(key: string) {
   await initDb();
-  const rs = await db.execute({ sql: "SELECT value FROM settings WHERE key = ?", args: [key] });
-  return rs.rows.length > 0 ? String(rs.rows[0].value) : "";
+  const rows = await query`SELECT value FROM settings WHERE key = ${key}`;
+  return rows.length > 0 ? String(rows[0].value) : "";
 }
 
 export async function setSetting(key: string, value: string) {
   await initDb();
-  await db.execute({
-    sql: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-    args: [key, value],
-  });
+  await query`INSERT INTO settings (key, value) VALUES (${key}, ${value}) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`;
 }
 
 export interface Message {
@@ -188,33 +177,20 @@ export interface Message {
 
 export async function getMessages() {
   await initDb();
-  const rs = await db.execute("SELECT * FROM messages ORDER BY created_at DESC");
-  return rs.rows.map((r) => ({
-    id: Number(r.id),
-    content: String(r.content),
-    author: String(r.author),
-    created_at: String(r.created_at),
-  }));
+  const rows = await query`SELECT * FROM messages ORDER BY created_at DESC`;
+  return rows.map((r) => row<Message>(r));
 }
 
 export async function createMessage(data: { content: string; author: string }) {
   await initDb();
-  const rs = await db.execute({
-    sql: "INSERT INTO messages (content, author) VALUES (?, ?) RETURNING *",
-    args: [data.content, data.author],
-  });
-  return {
-    id: Number(rs.rows[0].id),
-    content: String(rs.rows[0].content),
-    author: String(rs.rows[0].author),
-    created_at: String(rs.rows[0].created_at),
-  };
+  const rows = await query`INSERT INTO messages (content, author) VALUES (${data.content}, ${data.author}) RETURNING *`;
+  return row<Message>(rows[0]);
 }
 
 export async function deleteMessage(id: number) {
   await initDb();
-  const rs = await db.execute({ sql: "DELETE FROM messages WHERE id = ?", args: [id] });
-  return rs.rowsAffected > 0;
+  const result = await query`DELETE FROM messages WHERE id = ${id}`;
+  return true;
 }
 
 export interface Wish {
@@ -228,31 +204,14 @@ export interface Wish {
 
 export async function getWishes() {
   await initDb();
-  const rs = await db.execute("SELECT * FROM wishes ORDER BY completed ASC, created_at DESC");
-  return rs.rows.map((r) => ({
-    id: Number(r.id),
-    title: String(r.title),
-    description: String(r.description),
-    completed: Number(r.completed),
-    author: String(r.author),
-    created_at: String(r.created_at),
-  }));
+  const rows = await query`SELECT * FROM wishes ORDER BY completed ASC, created_at DESC`;
+  return rows.map((r) => row<Wish>(r));
 }
 
 export async function createWish(data: { title: string; description: string; author: string }) {
   await initDb();
-  const rs = await db.execute({
-    sql: "INSERT INTO wishes (title, description, author) VALUES (?, ?, ?) RETURNING *",
-    args: [data.title, data.description, data.author],
-  });
-  return {
-    id: Number(rs.rows[0].id),
-    title: String(rs.rows[0].title),
-    description: String(rs.rows[0].description),
-    completed: Number(rs.rows[0].completed),
-    author: String(rs.rows[0].author),
-    created_at: String(rs.rows[0].created_at),
-  };
+  const rows = await query`INSERT INTO wishes (title, description, author) VALUES (${data.title}, ${data.description}, ${data.author}) RETURNING *`;
+  return row<Wish>(rows[0]);
 }
 
 export async function updateWish(
@@ -260,29 +219,20 @@ export async function updateWish(
   data: { title?: string; description?: string; completed?: number; author?: string }
 ) {
   await initDb();
-  const existing = await db.execute({ sql: "SELECT * FROM wishes WHERE id = ?", args: [id] });
-  if (existing.rows.length === 0) return null;
-  const row = existing.rows[0];
-  const title = data.title ?? String(row.title);
-  const description = data.description ?? String(row.description);
-  const completed = data.completed ?? Number(row.completed);
-  const author = data.author ?? String(row.author);
-  const rs = await db.execute({
-    sql: "UPDATE wishes SET title=?, description=?, completed=?, author=? WHERE id=? RETURNING *",
-    args: [title, description, completed, author, id],
-  });
-  return {
-    id: Number(rs.rows[0].id),
-    title: String(rs.rows[0].title),
-    description: String(rs.rows[0].description),
-    completed: Number(rs.rows[0].completed),
-    author: String(rs.rows[0].author),
-    created_at: String(rs.rows[0].created_at),
-  };
+  const existing = await query`SELECT * FROM wishes WHERE id = ${id}`;
+  if (existing.length === 0) return null;
+  const r = existing[0];
+  const rows = await query`UPDATE wishes SET
+    title=${data.title ?? String(r.title)},
+    description=${data.description ?? String(r.description)},
+    completed=${data.completed ?? Number(r.completed)},
+    author=${data.author ?? String(r.author)}
+    WHERE id=${id} RETURNING *`;
+  return row<Wish>(rows[0]);
 }
 
 export async function deleteWish(id: number) {
   await initDb();
-  const rs = await db.execute({ sql: "DELETE FROM wishes WHERE id = ?", args: [id] });
-  return rs.rowsAffected > 0;
+  await query`DELETE FROM wishes WHERE id = ${id}`;
+  return true;
 }
