@@ -51,13 +51,13 @@ export default function SettingsPage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-2">
-            💙 我的昵称
+            💙 他的昵称
           </label>
           <input
             type="text"
             value={myName}
             onChange={(e) => setMyName(e.target.value)}
-            placeholder="我"
+            placeholder="他"
             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-rose-300 focus:ring-2 focus:ring-rose-100 outline-none text-sm"
           />
         </div>

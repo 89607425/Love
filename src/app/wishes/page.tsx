@@ -9,7 +9,7 @@ export default function WishesPage() {
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [author, setAuthor] = useState("我");
+  const [author, setAuthor] = useState("他");
   const [submitting, setSubmitting] = useState(false);
 
   const fetchWishes = async () => {
@@ -90,7 +90,7 @@ export default function WishesPage() {
                   谁的想法
                 </label>
                 <div className="flex gap-2">
-                  {["我", "她"].map((who) => (
+                  {["他", "她"].map((who) => (
                     <button
                       key={who}
                       type="button"
@@ -101,7 +101,7 @@ export default function WishesPage() {
                           : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       }`}
                     >
-                      {who === "我" ? "💙 我" : "💗 她"}
+                      {who === "他" ? "💙 他" : "💗 她"}
                     </button>
                   ))}
                 </div>
@@ -229,7 +229,7 @@ function WishCard({
             {wish.title}
           </span>
           <span className="text-[10px] font-medium text-rose-400 bg-rose-50 px-1.5 py-0.5 rounded-full shrink-0">
-            {wish.author === "我" ? "💙" : "💗"}
+            {wish.author === "他" ? "💙" : "💗"}
           </span>
         </div>
         {wish.description && (

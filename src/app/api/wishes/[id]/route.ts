@@ -7,7 +7,7 @@ export async function PUT(
 ) {
   const { id } = await params;
   const data = await req.json();
-  const wish = updateWish(Number(id), data);
+  const wish = await updateWish(Number(id), data);
   if (!wish) {
     return NextResponse.json({ error: "愿望不存在" }, { status: 404 });
   }
@@ -19,7 +19,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const ok = deleteWish(Number(id));
+  const ok = await deleteWish(Number(id));
   if (!ok) {
     return NextResponse.json({ error: "愿望不存在" }, { status: 404 });
   }

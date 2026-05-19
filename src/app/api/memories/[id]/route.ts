@@ -8,7 +8,7 @@ export async function PUT(
   const { id } = await params;
   const data = await req.json();
 
-  const memory = updateMemory(Number(id), data);
+  const memory = await updateMemory(Number(id), data);
   if (!memory) {
     return NextResponse.json({ error: "记录不存在" }, { status: 404 });
   }
@@ -21,7 +21,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const deleted = deleteMemory(Number(id));
+  const deleted = await deleteMemory(Number(id));
 
   if (!deleted) {
     return NextResponse.json({ error: "记录不存在" }, { status: 404 });

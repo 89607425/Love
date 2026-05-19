@@ -8,7 +8,7 @@ import Nav from "@/components/Nav";
 export default function MessagesPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [content, setContent] = useState("");
-  const [author, setAuthor] = useState("我");
+  const [author, setAuthor] = useState("他");
   const [submitting, setSubmitting] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -75,17 +75,17 @@ export default function MessagesPage() {
       <div className="shrink-0 px-4 py-3 bg-white border-t border-rose-100">
         <div className="flex gap-2 mb-2">
           <button
-            onClick={() => setAuthor(author === "我" ? "她" : "我")}
+            onClick={() => setAuthor(author === "他" ? "她" : "他")}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              author === "我"
+              author === "他"
                 ? "bg-rose-100 text-rose-600"
                 : "bg-gray-100 text-gray-500"
             }`}
           >
-            💙 我
+            💙 他
           </button>
           <button
-            onClick={() => setAuthor(author === "我" ? "她" : "我")}
+            onClick={() => setAuthor(author === "他" ? "她" : "他")}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
               author === "她"
                 ? "bg-rose-100 text-rose-600"

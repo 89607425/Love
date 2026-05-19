@@ -6,7 +6,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const ok = deleteMessage(Number(id));
+  const ok = await deleteMessage(Number(id));
   if (!ok) {
     return NextResponse.json({ error: "留言不存在" }, { status: 404 });
   }
