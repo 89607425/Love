@@ -11,6 +11,7 @@ export default function FootprintsPage() {
   const [cityMemories, setCityMemories] = useState<Memory[]>([]);
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<any>(null);
+  const hasGeoRef = useRef(false);
 
   useEffect(() => {
     fetch("/api/memories")
@@ -25,63 +26,70 @@ export default function FootprintsPage() {
     let cancelled = false;
 
     (async () => {
+      const echarts = await import("echarts");
+      if (cancelled || !chartRef.current) return;
+
+      chartInstance.current = echarts.init(chartRef.current);
+
+      let hasGeo = false;
       try {
-        const echarts = await import("echarts");
         const res = await fetch(
           "https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json"
         );
-        const geoJson = await res.json();
-        echarts.registerMap("china", geoJson);
-
-        if (cancelled || !chartRef.current) return;
-
-        chartInstance.current = echarts.init(chartRef.current);
-        chartInstance.current.setOption({
-          backgroundColor: "transparent",
-          tooltip: {
-            trigger: "item",
-            formatter: (params: any) => {
-              if (params.seriesType === "effectScatter") {
-                return `${params.name}<br/>📝 ${params.value[2]} 条回忆`;
-              }
-              return params.name;
-            },
-          },
-          geo: {
-            map: "china",
-            roam: true,
-            zoom: 1.2,
-            center: [104.0, 35.0],
-            label: { show: false },
-            itemStyle: {
-              areaColor: "#f5f5f5",
-              borderColor: "#e5e7eb",
-            },
-            emphasis: {
-              label: { show: true, fontSize: 12, color: "#333" },
-              itemStyle: { areaColor: "#fce7f3" },
-            },
-            regions: [],
-          },
-          series: [],
-        });
-
-        chartInstance.current.on("click", (params: any) => {
-          if (params.seriesType === "effectScatter" && params.data) {
-            const city = params.name;
-            const locMemories = memories.filter((m) => m.location === city);
-            setSelectedCity(city);
-            setCityMemories(locMemories);
-          }
-        });
-
-        const handleResize = () => chartInstance.current?.resize();
-        window.addEventListener("resize", handleResize);
-
-        return () => window.removeEventListener("resize", handleResize);
-      } catch (e) {
-        console.error("地图加载失败:", e);
+        if (res.ok) {
+          const geoJson = await res.json();
+          echarts.registerMap("china", geoJson);
+          hasGeo = true;
+          hasGeoRef.current = true;
+        }
+      } catch {
+        console.warn("中国地图 GeoJSON 加载失败，使用简化视图");
       }
+
+      const baseOption: any = {
+        backgroundColor: "transparent",
+        tooltip: {
+          trigger: "item",
+          formatter: (params: any) => {
+            if (params.seriesType === "effectScatter") {
+              return `${params.name}<br/>📝 ${params.value[2]} 条回忆`;
+            }
+            return params.name;
+          },
+        },
+        series: [],
+      };
+
+      if (hasGeo) {
+        baseOption.geo = {
+          map: "china",
+          roam: true,
+          zoom: 1.2,
+          center: [104.0, 35.0],
+          label: { show: false },
+          itemStyle: { areaColor: "#f5f5f5", borderColor: "#e5e7eb" },
+          emphasis: {
+            label: { show: true, fontSize: 12, color: "#333" },
+            itemStyle: { areaColor: "#fce7f3" },
+          },
+          regions: [],
+        };
+      }
+
+      chartInstance.current.setOption(baseOption);
+
+      chartInstance.current.on("click", (params: any) => {
+        if (params.seriesType === "effectScatter" && params.data) {
+          const city = params.name;
+          const locMemories = memories.filter((m) => m.location === city);
+          setSelectedCity(city);
+          setCityMemories(locMemories);
+        }
+      });
+
+      const handleResize = () => chartInstance.current?.resize();
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
     })();
 
     return () => {
@@ -113,36 +121,34 @@ export default function FootprintsPage() {
       label: { show: true, fontSize: 10, color: "#be123c" },
     }));
 
-    chartInstance.current.setOption({
-      geo: { regions },
-      series: scatterData.length > 0
-        ? [
-            {
-              type: "effectScatter",
-              coordinateSystem: "geo",
-              data: scatterData,
-              symbol: "pin",
-              symbolSize: [28, 40],
-              showEffectOn: "render",
-              rippleEffect: { brushType: "stroke", scale: 2.5 },
-              itemStyle: { color: "#e11d48" },
-              label: {
-                show: true,
-                formatter: "{b}",
-                position: "bottom",
-                distance: 18,
-                fontSize: 10,
-                color: "#1f2937",
-                fontWeight: "bold",
-              },
-              emphasis: {
-                scale: 1.5,
-                itemStyle: { color: "#be123c" },
-              },
-            },
-          ]
-        : [],
-    });
+    const scatterSeries = scatterData.length > 0
+      ? {
+          type: "effectScatter",
+          data: scatterData,
+          coordinateSystem: hasGeoRef.current ? "geo" : undefined,
+          symbol: "pin",
+          symbolSize: [28, 40],
+          showEffectOn: "render",
+          rippleEffect: { brushType: "stroke", scale: 2.5 },
+          itemStyle: { color: "#e11d48" },
+          label: {
+            show: true,
+            formatter: "{b}",
+            position: "bottom",
+            distance: 18,
+            fontSize: 10,
+            color: "#1f2937",
+            fontWeight: "bold",
+          },
+          emphasis: { scale: 1.5, itemStyle: { color: "#be123c" } },
+        }
+      : undefined;
+
+    chartInstance.current.setOption(
+      hasGeoRef.current
+        ? { geo: { regions }, series: scatterSeries ? [scatterSeries] : [] }
+        : { series: scatterSeries ? [scatterSeries] : [] }
+    );
   }, [memories]);
 
   const cities = (() => {
