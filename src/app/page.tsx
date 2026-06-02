@@ -1,11 +1,5 @@
-import HomePage from "@/components/HomePage";
-import Nav from "@/components/Nav";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return (
-    <>
-      <HomePage />
-      <Nav />
-    </>
-  );
+  redirect("/calendar");
 }

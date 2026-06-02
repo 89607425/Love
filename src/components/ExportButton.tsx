@@ -51,7 +51,7 @@ export default function ExportButton() {
         doc.setFontSize(11);
         doc.setTextColor(244, 63, 94);
         doc.setFont("helvetica", "bold");
-        doc.text(`${m.date}   ${m.author === "我" ? "💙 我" : "💗 她"}`, margin, y);
+        doc.text(`${m.date}   ${m.author === "他" ? "💙 他" : "💗 她"}`, margin, y);
         y += 6;
 
         doc.setFontSize(10);

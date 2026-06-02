@@ -13,17 +13,25 @@ function query(strings: TemplateStringsArray, ...params: unknown[]) {
 
 let initialized = false;
 
-async function initDb() {
+export async function initDb() {
   if (initialized) return;
+  console.log("[initDb] Creating tables...");
+  try {
   await query`CREATE TABLE IF NOT EXISTS memories (
     id SERIAL PRIMARY KEY,
     date TEXT NOT NULL,
     content TEXT NOT NULL DEFAULT '',
     images TEXT NOT NULL DEFAULT '[]',
     tags TEXT NOT NULL DEFAULT '[]',
-    author TEXT NOT NULL DEFAULT '我',
+    author TEXT NOT NULL DEFAULT '他',
+    location TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
+  try {
+    await query`ALTER TABLE memories ADD COLUMN location TEXT NOT NULL DEFAULT ''`;
+  } catch {
+    // Column already exists
+  }
   await query`CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -31,7 +39,7 @@ async function initDb() {
   await query`CREATE TABLE IF NOT EXISTS messages (
     id SERIAL PRIMARY KEY,
     content TEXT NOT NULL DEFAULT '',
-    author TEXT NOT NULL DEFAULT '我',
+    author TEXT NOT NULL DEFAULT '他',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
   await query`CREATE TABLE IF NOT EXISTS wishes (
@@ -39,13 +47,18 @@ async function initDb() {
     title TEXT NOT NULL DEFAULT '',
     description TEXT NOT NULL DEFAULT '',
     completed INTEGER NOT NULL DEFAULT 0,
-    author TEXT NOT NULL DEFAULT '我',
+    author TEXT NOT NULL DEFAULT '他',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
   await query`INSERT INTO settings (key, value) VALUES ('start_date', '') ON CONFLICT (key) DO NOTHING`;
-  await query`INSERT INTO settings (key, value) VALUES ('my_name', '我') ON CONFLICT (key) DO NOTHING`;
+  await query`INSERT INTO settings (key, value) VALUES ('my_name', '他') ON CONFLICT (key) DO NOTHING`;
   await query`INSERT INTO settings (key, value) VALUES ('her_name', '她') ON CONFLICT (key) DO NOTHING`;
   initialized = true;
+  console.log("[initDb] Tables created successfully");
+  } catch (e) {
+    console.error("[initDb] Failed:", e instanceof Error ? e.message : e);
+    throw e;
+  }
 }
 
 function row<T>(r: Record<string, unknown>): T {
@@ -59,6 +72,7 @@ export interface Memory {
   images: string[];
   tags: string[];
   author: string;
+  location: string;
   created_at: string;
 }
 
@@ -72,6 +86,7 @@ function parseMemory(r: Record<string, unknown>): Memory {
     images: JSON.parse(images),
     tags: JSON.parse(tags),
     author: String(r.author),
+    location: String(r.location || ""),
     created_at: String(r.created_at),
   };
 }
@@ -108,23 +123,44 @@ export async function getDatesWithMemories(year: number, month: number) {
   return rows.map((r) => String(r.date));
 }
 
+export async function getDatesWithMemoriesByYear(year: number) {
+  await initDb();
+  const start = `${year}-01-01`;
+  const end = `${year + 1}-01-01`;
+  const rows = await query`SELECT DISTINCT date FROM memories WHERE date >= ${start} AND date < ${end}`;
+  return rows.map((r) => String(r.date));
+}
+
+export async function getMemoriesByLocation(location: string) {
+  await initDb();
+  const rows = await query`SELECT * FROM memories WHERE location = ${location} ORDER BY date DESC, created_at DESC`;
+  return rows.map(parseMemory);
+}
+
+export async function getAllLocationsWithMemories() {
+  await initDb();
+  const rows = await query`SELECT DISTINCT location FROM memories WHERE location != ''`;
+  return rows.map((r) => String(r.location));
+}
+
 export async function createMemory(data: {
   date: string;
   content: string;
   images: string[];
   tags: string[];
   author: string;
+  location: string;
 }) {
   await initDb();
-  const rows = await query`INSERT INTO memories (date, content, images, tags, author)
-    VALUES (${data.date}, ${data.content}, ${JSON.stringify(data.images)}, ${JSON.stringify(data.tags)}, ${data.author})
+  const rows = await query`INSERT INTO memories (date, content, images, tags, author, location)
+    VALUES (${data.date}, ${data.content}, ${JSON.stringify(data.images)}, ${JSON.stringify(data.tags)}, ${data.author}, ${data.location})
     RETURNING *`;
   return parseMemory(rows[0]);
 }
 
 export async function updateMemory(
   id: number,
-  data: { content?: string; images?: string[]; tags?: string[]; author?: string }
+  data: { content?: string; images?: string[]; tags?: string[]; author?: string; location?: string }
 ) {
   await initDb();
   const existing = await query`SELECT * FROM memories WHERE id = ${id}`;
@@ -134,7 +170,8 @@ export async function updateMemory(
   const images = data.images !== undefined ? JSON.stringify(data.images) : String(row.images);
   const tags = data.tags !== undefined ? JSON.stringify(data.tags) : String(row.tags);
   const author = data.author ?? String(row.author);
-  const rows = await query`UPDATE memories SET content=${content}, images=${images}, tags=${tags}, author=${author} WHERE id=${id} RETURNING *`;
+  const location = data.location !== undefined ? data.location : String(row.location || "");
+  const rows = await query`UPDATE memories SET content=${content}, images=${images}, tags=${tags}, author=${author}, location=${location} WHERE id=${id} RETURNING *`;
   return parseMemory(rows[0]);
 }
 

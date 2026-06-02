@@ -11,7 +11,7 @@ interface Props {
 
 export default function MessageBubble({ content, author, created_at, onDelete }: Props) {
   const date = created_at.slice(0, 16).replace("T", " ");
-  const isMe = author === "我";
+  const isMe = author === "他";
 
   return (
     <div className={`flex ${isMe ? "justify-end" : "justify-start"} mb-3`}>

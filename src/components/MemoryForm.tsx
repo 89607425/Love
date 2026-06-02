@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Memory } from "@/lib/db";
+import { CHINA_CITIES } from "@/lib/cities";
 
 interface Props {
   date: string;
@@ -12,9 +13,25 @@ interface Props {
     images: string[];
     tags: string[];
     author: string;
+    location: string;
     id?: number;
   }) => void;
   onClose: () => void;
+}
+
+const MAX_SIZE = 4 * 1024 * 1024;
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (file.size > MAX_SIZE) {
+      reject(new Error(`图片 ${file.name} 超过 4MB，请压缩后重试`));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("读取图片失败"));
+    reader.readAsDataURL(file);
+  });
 }
 
 export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
@@ -23,9 +40,20 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [tags, setTags] = useState<string[]>(memory?.tags || []);
   const [tagInput, setTagInput] = useState("");
-  const [author, setAuthor] = useState(memory?.author || "我");
+  const [author, setAuthor] = useState(memory?.author || "他");
+  const [location, setLocation] = useState(memory?.location || "");
+  const [locationInput, setLocationInput] = useState(memory?.location || "");
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const locationRef = useRef<HTMLDivElement>(null);
+
+  const locationSuggestions = useMemo(() => {
+    if (!locationInput.trim()) return [] as string[];
+    const q = locationInput.trim().toLowerCase();
+    return CHINA_CITIES.filter((c) => c.toLowerCase().includes(q)).slice(0, 8);
+  }, [locationInput]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -54,21 +82,25 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
     setTags((prev) => prev.filter((t) => t !== tag));
   };
 
+  const selectLocation = (city: string) => {
+    setLocation(city);
+    setLocationInput(city);
+    setShowLocationSuggestions(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setError("");
 
-    let uploadedPaths: string[] = [];
+    let newImageUrls: string[] = [];
 
     if (pendingFiles.length > 0) {
-      const formData = new FormData();
-      pendingFiles.forEach((f) => formData.append("files", f));
       try {
-        const res = await fetch("/api/upload", { method: "POST", body: formData });
-        const data = await res.json();
-        if (data.paths) uploadedPaths = data.paths;
+        const results = await Promise.all(pendingFiles.map(fileToDataUrl));
+        newImageUrls = results;
       } catch (err) {
-        console.error("Upload failed:", err);
+        setError(err instanceof Error ? err.message : "图片处理失败");
         setSubmitting(false);
         return;
       }
@@ -77,9 +109,10 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
     onSave({
       date,
       content,
-      images: [...existingImages, ...uploadedPaths],
+      images: [...existingImages, ...newImageUrls],
       tags,
       author,
+      location: location || locationInput,
       id: memory?.id,
     });
 
@@ -111,20 +144,23 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
               记录人
             </label>
             <div className="flex gap-2">
-              {["我", "她"].map((who) => (
-                <button
-                  key={who}
-                  type="button"
-                  onClick={() => setAuthor(who)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                    author === who
-                      ? "bg-rose-500 text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                >
-                  {who === "我" ? "💙 我" : "💗 她"}
-                </button>
-              ))}
+              {["侯竣译", "盛雨轩"].map((name, i) => {
+                const who = i === 0 ? "他" : "她";
+                return (
+                  <button
+                    key={who}
+                    type="button"
+                    onClick={() => setAuthor(who)}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                      author === who
+                        ? "bg-rose-500 text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {who === "他" ? "💙 " : "💗 "}{name}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -139,6 +175,38 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
               placeholder="记录今天的美好..."
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-rose-300 focus:ring-2 focus:ring-rose-100 outline-none resize-none text-sm"
             />
+          </div>
+
+          <div className="relative" ref={locationRef}>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              📍 地点
+            </label>
+            <input
+              value={locationInput}
+              onChange={(e) => {
+                setLocationInput(e.target.value);
+                setLocation("");
+                setShowLocationSuggestions(true);
+              }}
+              onFocus={() => setShowLocationSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 200)}
+              placeholder="选择或输入城市名称..."
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-rose-300 focus:ring-2 focus:ring-rose-100 outline-none text-sm"
+            />
+            {showLocationSuggestions && locationSuggestions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto">
+                {locationSuggestions.map((city) => (
+                  <button
+                    key={city}
+                    type="button"
+                    onMouseDown={() => selectLocation(city)}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                  >
+                    📍 {city}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>
@@ -194,7 +262,7 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
               onClick={() => fileRef.current?.click()}
               className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-rose-300 hover:text-rose-500 transition-colors"
             >
-              📷 点击选择图片 (已选 {pendingFiles.length} 张)
+              📷 点击选择图片 (已选 {pendingFiles.length} 张，单张不超过 4MB)
             </button>
           </div>
 
@@ -244,12 +312,16 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
             )}
           </div>
 
+          {error && (
+            <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+          )}
+
           <button
             type="submit"
             disabled={submitting}
             className="w-full py-3 bg-rose-500 text-white rounded-xl font-medium hover:bg-rose-600 transition-colors disabled:opacity-50"
           >
-            {submitting ? "上传中..." : memory ? "💾 保存修改" : "💕 记录这一刻"}
+            {submitting ? "保存中..." : memory ? "💾 保存修改" : "💕 记录这一刻"}
           </button>
         </form>
       </div>

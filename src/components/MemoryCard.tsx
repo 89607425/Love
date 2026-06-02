@@ -12,9 +12,14 @@ export default function MemoryCard({ memory, onEdit, onDelete }: Props) {
   return (
     <div className="bg-white rounded-2xl p-4 shadow-sm border border-rose-100 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-medium text-rose-400 bg-rose-50 px-2.5 py-1 rounded-full">
-          {memory.author === "我" ? "💙 我" : "💗 她"}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-rose-400 bg-rose-50 px-2.5 py-1 rounded-full">
+            {memory.author === "他" ? "💙 他" : "💗 她"}
+          </span>
+          {memory.location && (
+            <span className="text-xs text-gray-400">📍 {memory.location}</span>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => onEdit?.(memory)}

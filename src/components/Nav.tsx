@@ -4,12 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
-  { href: "/", label: "首页", icon: "🏠" },
   { href: "/calendar", label: "日历", icon: "📅" },
   { href: "/timeline", label: "时光轴", icon: "🖼️" },
   { href: "/messages", label: "留言板", icon: "💌" },
   { href: "/wishes", label: "愿望", icon: "⭐" },
-  { href: "/settings", label: "设置", icon: "⚙️" },
+  { href: "/footprints", label: "足迹", icon: "🗺️" },
 ];
 
 export default function Nav() {
@@ -19,8 +18,7 @@ export default function Nav() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-t border-rose-100 safe-area-bottom">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-1">
         {tabs.map((tab) => {
-          const isActive =
-            tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
+          const isActive = pathname.startsWith(tab.href);
           return (
             <Link
               key={tab.href}
