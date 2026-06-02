@@ -33,9 +33,7 @@ export default function FootprintsPage() {
       chartInstance.current = echarts.init(chartRef.current);
 
       try {
-        const res = await fetch(
-          "https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json"
-        );
+        const res = await fetch("/china.json");
         if (res.ok) {
           const geoJson = await res.json();
           echarts.registerMap("china", geoJson);

@@ -4,7 +4,8 @@
       "Bash(mkdir:*)",
       "Bash(cp:*)",
       "Bash(npm install echarts)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(curl -sL -o /Users/houjunyi/Desktop/Love/public/china.json -w \"%{http_code} %{size_download}\" --connect-timeout 10 \"https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json\")"
     ],
     "deny": [],
     "ask": []
