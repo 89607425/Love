@@ -3,31 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Nav from "@/components/Nav";
 import { Memory } from "@/lib/db";
-import { CITY_COORDS } from "@/lib/cities";
-
-let echartsPromise: Promise<any> | null = null;
-
-async function loadECharts() {
-  if (echartsPromise) return echartsPromise;
-
-  echartsPromise = (async () => {
-    const echarts = await import("echarts");
-
-    try {
-      const res = await fetch(
-        "https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json"
-      );
-      const geoJson = await res.json();
-      echarts.registerMap("china", geoJson);
-    } catch {
-      console.warn("Failed to load China map geo data");
-    }
-
-    return echarts;
-  })();
-
-  return echartsPromise;
-}
+import { CITY_COORDS, CITY_PROVINCE } from "@/lib/cities";
 
 export default function FootprintsPage() {
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -37,129 +13,137 @@ export default function FootprintsPage() {
   const chartInstance = useRef<any>(null);
 
   useEffect(() => {
-    fetch("/api/memories?locationsOnly=true")
-      .then((r) => r.json())
-      .then((locations: string[]) => {
-        if (locations.length > 0) {
-          const params = new URLSearchParams();
-          params.set("locationsOnly", "1");
-          return fetch("/api/memories");
-        }
-        return fetch("/api/memories");
-      })
+    fetch("/api/memories")
       .then((r) => r.json())
       .then((allMemories: Memory[]) => {
-        const withLocation = allMemories.filter((m) => m.location);
-        setMemories(withLocation);
-        return withLocation;
-      })
-      .then((withLocation) => {
-        initChart(withLocation);
+        setMemories(allMemories.filter((m) => m.location));
       });
   }, []);
 
-  const initChart = async (data: Memory[]) => {
-    if (!chartRef.current || data.length === 0) return;
+  useEffect(() => {
+    if (!chartRef.current) return;
+    let cancelled = false;
 
-    const echarts = await loadECharts();
+    (async () => {
+      try {
+        const echarts = await import("echarts");
+        const res = await fetch(
+          "https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json"
+        );
+        const geoJson = await res.json();
+        echarts.registerMap("china", geoJson);
 
-    if (chartInstance.current) {
-      chartInstance.current.dispose();
-    }
+        if (cancelled || !chartRef.current) return;
+
+        chartInstance.current = echarts.init(chartRef.current);
+        chartInstance.current.setOption({
+          backgroundColor: "transparent",
+          tooltip: {
+            trigger: "item",
+            formatter: (params: any) => {
+              if (params.seriesType === "effectScatter") {
+                return `${params.name}<br/>📝 ${params.value[2]} 条回忆`;
+              }
+              return params.name;
+            },
+          },
+          geo: {
+            map: "china",
+            roam: true,
+            zoom: 1.2,
+            center: [104.0, 35.0],
+            label: { show: false },
+            itemStyle: {
+              areaColor: "#f5f5f5",
+              borderColor: "#e5e7eb",
+            },
+            emphasis: {
+              label: { show: true, fontSize: 12, color: "#333" },
+              itemStyle: { areaColor: "#fce7f3" },
+            },
+            regions: [],
+          },
+          series: [],
+        });
+
+        chartInstance.current.on("click", (params: any) => {
+          if (params.seriesType === "effectScatter" && params.data) {
+            const city = params.name;
+            const locMemories = memories.filter((m) => m.location === city);
+            setSelectedCity(city);
+            setCityMemories(locMemories);
+          }
+        });
+
+        const handleResize = () => chartInstance.current?.resize();
+        window.addEventListener("resize", handleResize);
+
+        return () => window.removeEventListener("resize", handleResize);
+      } catch (e) {
+        console.error("地图加载失败:", e);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      chartInstance.current?.dispose();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!chartInstance.current) return;
 
     const cityMap = new Map<string, Memory[]>();
-    data.forEach((m) => {
+    const provCount: Record<string, number> = {};
+    memories.forEach((m) => {
       if (!cityMap.has(m.location)) cityMap.set(m.location, []);
       cityMap.get(m.location)!.push(m);
+      const prov = CITY_PROVINCE[m.location];
+      if (prov) provCount[prov] = (provCount[prov] || 0) + 1;
     });
 
     const scatterData = Array.from(cityMap.entries()).map(([city, mems]) => {
       const coords = CITY_COORDS[city] || [121.48, 31.22];
-      return {
-        name: city,
-        value: [...coords, mems.length],
-        memories: mems,
-      };
+      return { name: city, value: [...coords, mems.length] };
     });
 
-    chartInstance.current = echarts.init(chartRef.current);
+    const regions = Object.keys(provCount).map((prov) => ({
+      name: prov,
+      itemStyle: { areaColor: "#fda4af" },
+      label: { show: true, fontSize: 10, color: "#be123c" },
+    }));
+
     chartInstance.current.setOption({
-      backgroundColor: "transparent",
-      tooltip: {
-        trigger: "item",
-        formatter: (params: any) => {
-          if (params.seriesType === "scatter" || params.seriesType === "effectScatter") {
-            return `${params.name}<br/>📝 ${params.value[2]} 条回忆`;
-          }
-          return params.name;
-        },
-      },
-      geo: {
-        map: "china",
-        roam: true,
-        zoom: 1.2,
-        center: [104.0, 35.0],
-        label: { show: false },
-        itemStyle: {
-          areaColor: "#fdf2f8",
-          borderColor: "#f9a8d4",
-        },
-        emphasis: {
-          itemStyle: {
-            areaColor: "#fce7f3",
-          },
-        },
-      },
-      series: [
-        {
-          type: "effectScatter",
-          coordinateSystem: "geo",
-          data: scatterData.map((d) => ({
-            name: d.name,
-            value: d.value,
-          })),
-          symbolSize: (val: number[]) => Math.min(val[2] * 8 + 8, 40),
-          showEffectOn: "render",
-          rippleEffect: {
-            brushType: "stroke",
-            scale: 3,
-          },
-          itemStyle: {
-            color: "#f43f5e",
-          },
-          label: {
-            show: true,
-            formatter: "{b}",
-            position: "right",
-            fontSize: 11,
-            color: "#374151",
-          },
-          emphasis: {
-            scale: 2,
-          },
-        },
-      ],
+      geo: { regions },
+      series: scatterData.length > 0
+        ? [
+            {
+              type: "effectScatter",
+              coordinateSystem: "geo",
+              data: scatterData,
+              symbol: "pin",
+              symbolSize: [28, 40],
+              showEffectOn: "render",
+              rippleEffect: { brushType: "stroke", scale: 2.5 },
+              itemStyle: { color: "#e11d48" },
+              label: {
+                show: true,
+                formatter: "{b}",
+                position: "bottom",
+                distance: 18,
+                fontSize: 10,
+                color: "#1f2937",
+                fontWeight: "bold",
+              },
+              emphasis: {
+                scale: 1.5,
+                itemStyle: { color: "#be123c" },
+              },
+            },
+          ]
+        : [],
     });
-
-    chartInstance.current.on("click", (params: any) => {
-      if (params.seriesType === "effectScatter" && params.data) {
-        const city = params.name;
-        const item = scatterData.find((d) => d.name === city);
-        if (item) {
-          setSelectedCity(city);
-          setCityMemories(item.memories);
-        }
-      }
-    });
-  };
-
-  useEffect(() => {
-    return () => {
-      if (chartInstance.current) {
-        chartInstance.current.dispose();
-      }
-    };
-  }, []);
+  }, [memories]);
 
   const cities = (() => {
     const map = new Map<string, Memory[]>();
@@ -181,7 +165,9 @@ export default function FootprintsPage() {
         <header className="text-center pt-8 pb-4 px-4">
           <h1 className="text-2xl font-bold text-gray-800">🗺️ 我们的足迹</h1>
           <p className="text-xs text-gray-400 mt-1">
-            一起走过 {cities.length} 座城市
+            {cities.length > 0
+              ? `一起走过 ${cities.length} 座城市`
+              : "记录回忆时添加地点，就会出现在这里"}
           </p>
         </header>
 
@@ -191,14 +177,6 @@ export default function FootprintsPage() {
             className="w-full rounded-2xl border border-rose-100 shadow-sm bg-white"
             style={{ height: "420px" }}
           />
-
-          {memories.length === 0 && (
-            <div className="text-center py-16">
-              <p className="text-4xl mb-3">🗺️</p>
-              <p className="text-gray-400 text-sm">还没有去过的地方</p>
-              <p className="text-gray-400 text-sm">记录回忆时添加地点，就会出现在这里</p>
-            </div>
-          )}
         </div>
 
         {selectedCity && cityMemories.length > 0 && (
@@ -234,18 +212,6 @@ export default function FootprintsPage() {
                           {m.author === "他" ? "💙 他" : "💗 她"}
                         </span>
                       </div>
-                      {m.tags.length > 0 && (
-                        <div className="flex gap-1">
-                          {m.tags.map((t) => (
-                            <span
-                              key={t}
-                              className="text-[10px] text-rose-400 bg-white px-1.5 py-0.5 rounded-full"
-                            >
-                              #{t}
-                            </span>
-                          ))}
-                        </div>
-                      )}
                     </div>
                     {m.content && (
                       <p className="text-sm text-gray-700 whitespace-pre-wrap mb-2">
