@@ -12,6 +12,7 @@ export default function FootprintsPage() {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<any>(null);
   const hasGeoRef = useRef(false);
+  const [geoReady, setGeoReady] = useState(false);
 
   useEffect(() => {
     fetch("/api/memories")
@@ -31,7 +32,6 @@ export default function FootprintsPage() {
 
       chartInstance.current = echarts.init(chartRef.current);
 
-      let hasGeo = false;
       try {
         const res = await fetch(
           "https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json"
@@ -39,44 +39,13 @@ export default function FootprintsPage() {
         if (res.ok) {
           const geoJson = await res.json();
           echarts.registerMap("china", geoJson);
-          hasGeo = true;
           hasGeoRef.current = true;
         }
       } catch {
         console.warn("中国地图 GeoJSON 加载失败，使用简化视图");
       }
 
-      const baseOption: any = {
-        backgroundColor: "transparent",
-        tooltip: {
-          trigger: "item",
-          formatter: (params: any) => {
-            if (params.seriesType === "effectScatter") {
-              return `${params.name}<br/>📝 ${params.value[2]} 条回忆`;
-            }
-            return params.name;
-          },
-        },
-        series: [],
-      };
-
-      if (hasGeo) {
-        baseOption.geo = {
-          map: "china",
-          roam: true,
-          zoom: 1.2,
-          center: [104.0, 35.0],
-          label: { show: false },
-          itemStyle: { areaColor: "#f5f5f5", borderColor: "#e5e7eb" },
-          emphasis: {
-            label: { show: true, fontSize: 12, color: "#333" },
-            itemStyle: { areaColor: "#fce7f3" },
-          },
-          regions: [],
-        };
-      }
-
-      chartInstance.current.setOption(baseOption);
+      setGeoReady(true);
 
       chartInstance.current.on("click", (params: any) => {
         if (params.seriesType === "effectScatter" && params.data) {
@@ -99,7 +68,7 @@ export default function FootprintsPage() {
   }, []);
 
   useEffect(() => {
-    if (!chartInstance.current) return;
+    if (!chartInstance.current || !geoReady) return;
 
     const cityMap = new Map<string, Memory[]>();
     const provCount: Record<string, number> = {};
@@ -144,12 +113,38 @@ export default function FootprintsPage() {
         }
       : undefined;
 
-    chartInstance.current.setOption(
-      hasGeoRef.current
-        ? { geo: { regions }, series: scatterSeries ? [scatterSeries] : [] }
-        : { series: scatterSeries ? [scatterSeries] : [] }
-    );
-  }, [memories]);
+    const option: any = {
+      backgroundColor: "transparent",
+      tooltip: {
+        trigger: "item",
+        formatter: (params: any) => {
+          if (params.seriesType === "effectScatter") {
+            return `${params.name}<br/>📝 ${params.value[2]} 条回忆`;
+          }
+          return params.name;
+        },
+      },
+      series: scatterSeries ? [scatterSeries] : [],
+    };
+
+    if (hasGeoRef.current) {
+      option.geo = {
+        map: "china",
+        roam: true,
+        zoom: 1.2,
+        center: [104.0, 35.0],
+        label: { show: false },
+        itemStyle: { areaColor: "#f5f5f5", borderColor: "#e5e7eb" },
+        emphasis: {
+          label: { show: true, fontSize: 12, color: "#333" },
+          itemStyle: { areaColor: "#fce7f3" },
+        },
+        regions,
+      };
+    }
+
+    chartInstance.current.setOption(option, true);
+  }, [memories, geoReady]);
 
   const cities = (() => {
     const map = new Map<string, Memory[]>();
