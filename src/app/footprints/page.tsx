@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Nav from "@/components/Nav";
 import { Memory } from "@/lib/db";
 import { CITY_COORDS, CITY_PROVINCE } from "@/lib/cities";
@@ -13,6 +13,8 @@ export default function FootprintsPage() {
   const chartInstance = useRef<any>(null);
   const hasGeoRef = useRef(false);
   const [geoReady, setGeoReady] = useState(false);
+  const cityListRef = useRef<HTMLDivElement>(null);
+  const [highlightCity, setHighlightCity] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/memories")
@@ -23,18 +25,25 @@ export default function FootprintsPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedCity) return;
-    const scrollY = window.scrollY;
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = "100%";
-    return () => {
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
-      window.scrollTo(0, scrollY);
-    };
+    if (!selectedCity || !cityListRef.current) return;
+    const el = cityListRef.current.querySelector(
+      `[data-city="${selectedCity.replace(/"/g, "\\\"")}"]`
+    );
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
   }, [selectedCity]);
+
+  const handleCityClick = useCallback((city: string, mems: Memory[]) => {
+    setSelectedCity(city);
+    setCityMemories(mems);
+    setHighlightCity(city);
+  }, []);
+
+  const handleModalClose = useCallback(() => {
+    setSelectedCity(null);
+    setCityMemories([]);
+  }, []);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -65,6 +74,7 @@ export default function FootprintsPage() {
           const locMemories = memories.filter((m) => m.location === city);
           setSelectedCity(city);
           setCityMemories(locMemories);
+          setHighlightCity(city);
         }
       });
 
@@ -195,17 +205,14 @@ export default function FootprintsPage() {
         </div>
 
         {selectedCity && cityMemories.length > 0 && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm">
-            <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[80vh] overflow-y-auto p-6 animate-slide-up">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+            <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-2xl max-h-[80vh] overflow-y-auto p-6 animate-slide-up m-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">
                   📍 {selectedCity}
                 </h3>
                 <button
-                  onClick={() => {
-                    setSelectedCity(null);
-                    setCityMemories([]);
-                  }}
+                  onClick={handleModalClose}
                   className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
                 >
                   ✕
@@ -227,19 +234,31 @@ export default function FootprintsPage() {
                       </span>
                     </div>
                     {m.content && (
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed mb-2">
                         {m.content}
                       </p>
                     )}
+                    {m.images.length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto">
+                        {m.images.map((img, i) => (
+                          <img
+                            key={i}
+                            src={img}
+                            alt=""
+                            className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
-              </div>
+            </div>
             </div>
           </div>
         )}
 
         {cities.length > 0 && (
-          <div className="px-4 mt-6">
+          <div className="px-4 mt-6" ref={cityListRef}>
             <h3 className="text-sm font-semibold text-gray-500 mb-3">
               🏙️ 走过的城市
             </h3>
@@ -247,11 +266,13 @@ export default function FootprintsPage() {
               {cities.map(([city, mems]) => (
                 <button
                   key={city}
-                  onClick={() => {
-                    setSelectedCity(city);
-                    setCityMemories(mems);
-                  }}
-                  className="w-full flex items-center justify-between bg-white rounded-xl p-4 shadow-sm border border-rose-100 hover:bg-rose-50 transition-colors"
+                  data-city={city}
+                  onClick={() => handleCityClick(city, mems)}
+                  className={`w-full flex items-center justify-between rounded-xl p-4 shadow-sm border transition-all ${
+                    highlightCity === city
+                      ? "bg-rose-100 border-rose-300 ring-2 ring-rose-300"
+                      : "bg-white border-rose-100 hover:bg-rose-50"
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-xl">📍</span>

@@ -21,20 +21,6 @@ export default function WishesPage() {
     fetchWishes();
   }, []);
 
-  useEffect(() => {
-    if (!showForm) return;
-    const scrollY = window.scrollY;
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = "100%";
-    return () => {
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
-      window.scrollTo(0, scrollY);
-    };
-  }, [showForm]);
-
   const handleCreate = async () => {
     if (!title.trim() || submitting) return;
     setSubmitting(true);
@@ -93,8 +79,8 @@ export default function WishesPage() {
         </div>
 
         {showForm && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm">
-            <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl p-6 animate-slide-up">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+            <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-2xl p-6 animate-slide-up m-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">添加愿望</h3>
                 <button
