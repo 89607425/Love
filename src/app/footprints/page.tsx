@@ -23,6 +23,20 @@ export default function FootprintsPage() {
   }, []);
 
   useEffect(() => {
+    if (!selectedCity) return;
+    const scrollY = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
+    return () => {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      window.scrollTo(0, scrollY);
+    };
+  }, [selectedCity]);
+
+  useEffect(() => {
     if (!chartRef.current) return;
     let cancelled = false;
 
@@ -77,10 +91,12 @@ export default function FootprintsPage() {
       if (prov) provCount[prov] = (provCount[prov] || 0) + 1;
     });
 
-    const scatterData = Array.from(cityMap.entries()).map(([city, mems]) => {
-      const coords = CITY_COORDS[city] || [121.48, 31.22];
-      return { name: city, value: [...coords, mems.length] };
-    });
+    const scatterData = Array.from(cityMap.entries())
+      .filter(([city]) => CITY_COORDS[city])
+      .map(([city, mems]) => {
+        const coords = CITY_COORDS[city];
+        return { name: city, value: [...coords, mems.length] };
+      });
 
     const regions = Object.keys(provCount).map((prov) => ({
       name: prov,
@@ -204,30 +220,16 @@ export default function FootprintsPage() {
                     key={m.id}
                     className="bg-rose-50 rounded-xl p-4 border border-rose-100"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-rose-500">{m.date}</span>
-                        <span className="text-xs font-medium text-rose-400 bg-white px-2 py-0.5 rounded-full">
-                          {m.author === "他" ? "💙 他" : "💗 她"}
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-semibold text-rose-500">{m.date}</span>
+                      <span className="text-xs font-medium text-rose-400 bg-white px-2 py-0.5 rounded-full">
+                        {m.author === "他" ? "💙 他" : "💗 她"}
+                      </span>
                     </div>
                     {m.content && (
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap mb-2">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                         {m.content}
                       </p>
-                    )}
-                    {m.images.length > 0 && (
-                      <div className="flex gap-2 overflow-x-auto">
-                        {m.images.map((img, i) => (
-                          <img
-                            key={i}
-                            src={img}
-                            alt=""
-                            className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
-                          />
-                        ))}
-                      </div>
                     )}
                   </div>
                 ))}
