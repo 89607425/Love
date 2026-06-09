@@ -3,7 +3,9 @@ import { getWishes, createWish } from "@/lib/db";
 
 export async function GET() {
   const wishes = await getWishes();
-  return NextResponse.json(wishes);
+  return NextResponse.json(wishes, {
+    headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" },
+  });
 }
 
 export async function POST(req: NextRequest) {

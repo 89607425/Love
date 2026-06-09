@@ -10,6 +10,12 @@ import {
   getAllLocationsWithMemories,
 } from "@/lib/db";
 
+function cached(data: unknown, maxAge = 60) {
+  return NextResponse.json(data, {
+    headers: { "Cache-Control": `public, max-age=${maxAge}, stale-while-revalidate=300` },
+  });
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const year = searchParams.get("year");
@@ -21,36 +27,36 @@ export async function GET(req: NextRequest) {
 
   if (locationsOnly) {
     const locs = await getAllLocationsWithMemories();
-    return NextResponse.json(locs);
+    return cached(locs, 120);
   }
 
   if (location) {
     const memories = await getMemoriesByLocation(location);
-    return NextResponse.json(memories);
+    return cached(memories, 60);
   }
 
   if (datesOnly && year && !month) {
     const dates = await getDatesWithMemoriesByYear(Number(year));
-    return NextResponse.json(dates);
+    return cached(dates, 60);
   }
 
   if (datesOnly && year && month) {
     const dates = await getDatesWithMemories(Number(year), Number(month));
-    return NextResponse.json(dates);
+    return cached(dates, 30);
   }
 
   if (date) {
     const memories = await getMemoriesByDate(date);
-    return NextResponse.json(memories);
+    return cached(memories, 30);
   }
 
   if (year && month) {
     const memories = await getMemoriesByMonth(Number(year), Number(month));
-    return NextResponse.json(memories);
+    return cached(memories, 60);
   }
 
   const memories = await getAllMemories();
-  return NextResponse.json(memories);
+  return cached(memories, 60);
 }
 
 export async function POST(req: NextRequest) {

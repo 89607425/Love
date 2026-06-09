@@ -3,7 +3,9 @@ import { getMessages, createMessage } from "@/lib/db";
 
 export async function GET() {
   const messages = await getMessages();
-  return NextResponse.json(messages);
+  return NextResponse.json(messages, {
+    headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" },
+  });
 }
 
 export async function POST(req: NextRequest) {

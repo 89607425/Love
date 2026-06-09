@@ -1,4 +1,6 @@
-import { neon } from "@neondatabase/serverless";
+import { neon, neonConfig } from "@neondatabase/serverless";
+
+neonConfig.fetchConnectionCache = true;
 
 let _sql: ReturnType<typeof neon> | null = null;
 function getSql() {
@@ -53,6 +55,9 @@ export async function initDb() {
   await query`INSERT INTO settings (key, value) VALUES ('start_date', '') ON CONFLICT (key) DO NOTHING`;
   await query`INSERT INTO settings (key, value) VALUES ('my_name', '他') ON CONFLICT (key) DO NOTHING`;
   await query`INSERT INTO settings (key, value) VALUES ('her_name', '她') ON CONFLICT (key) DO NOTHING`;
+  try { await query`CREATE INDEX IF NOT EXISTS idx_memories_date ON memories (date)`; } catch {}
+  try { await query`CREATE INDEX IF NOT EXISTS idx_memories_location ON memories (location)`; } catch {}
+  try { await query`CREATE INDEX IF NOT EXISTS idx_messages_created ON messages (created_at)`; } catch {}
   initialized = true;
   console.log("[initDb] Tables created successfully");
   } catch (e) {
