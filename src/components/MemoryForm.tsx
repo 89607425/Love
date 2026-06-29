@@ -77,7 +77,6 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
   const locationRef = useRef<HTMLDivElement>(null);
 
   const locationSuggestions = useMemo(() => {
@@ -280,20 +279,19 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
               </div>
             )}
             <input
-              ref={fileRef}
+              id="file-input"
               type="file"
               accept="image/*"
               multiple
               onChange={handleFileSelect}
-              className="hidden"
+              className="sr-only"
             />
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-rose-300 hover:text-rose-500 transition-colors"
+            <label
+              htmlFor="file-input"
+              className="block w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 text-center hover:border-rose-300 hover:text-rose-500 transition-colors cursor-pointer"
             >
               📷 点击选择图片 (已选 {pendingFiles.length} 张，自动压缩)
-            </button>
+            </label>
           </div>
 
           <div>
