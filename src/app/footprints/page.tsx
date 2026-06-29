@@ -180,13 +180,13 @@ export default function FootprintsPage() {
   })();
 
   return (
-    <div className="flex flex-col flex-1 pb-20 min-h-screen relative">
+    <div className="h-dvh flex flex-col relative overflow-hidden">
       <div
         className="absolute inset-0 bg-cover bg-center bg-fixed opacity-10 pointer-events-none"
         style={{ backgroundImage: "url(/backgrounds/one.PNG)" }}
       />
 
-      <div className="relative z-10">
+      <div className="flex-1 overflow-y-auto relative z-10 pb-16">
         <header className="text-center pt-8 pb-4 px-4">
           <h1 className="text-2xl font-bold text-gray-800">🗺️ 我们的足迹</h1>
           <p className="text-xs text-gray-400 mt-1">
@@ -203,59 +203,6 @@ export default function FootprintsPage() {
             style={{ height: "420px" }}
           />
         </div>
-
-        {selectedCity && cityMemories.length > 0 && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-            <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-2xl max-h-[80vh] overflow-y-auto p-6 animate-slide-up m-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  📍 {selectedCity}
-                </h3>
-                <button
-                  onClick={handleModalClose}
-                  className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
-                >
-                  ✕
-                </button>
-              </div>
-              <p className="text-sm text-gray-500 mb-4">
-                共 {cityMemories.length} 条回忆
-              </p>
-              <div className="space-y-3">
-                {cityMemories.map((m) => (
-                  <div
-                    key={m.id}
-                    className="bg-rose-50 rounded-xl p-4 border border-rose-100"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-semibold text-rose-500">{m.date}</span>
-                      <span className="text-xs font-medium text-rose-400 bg-white px-2 py-0.5 rounded-full">
-                        {m.author === "他" ? "💙 他" : "💗 她"}
-                      </span>
-                    </div>
-                    {m.content && (
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed mb-2">
-                        {m.content}
-                      </p>
-                    )}
-                    {m.images.length > 0 && (
-                      <div className="flex gap-2 overflow-x-auto">
-                        {m.images.map((img, i) => (
-                          <img
-                            key={i}
-                            src={img}
-                            alt=""
-                            className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-            </div>
-            </div>
-          </div>
-        )}
 
         {cities.length > 0 && (
           <div className="px-4 mt-6" ref={cityListRef}>
@@ -294,6 +241,59 @@ export default function FootprintsPage() {
           </div>
         )}
       </div>
+
+      {selectedCity && cityMemories.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-2xl max-h-[80vh] overflow-y-auto p-6 animate-slide-up m-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                📍 {selectedCity}
+              </h3>
+              <button
+                onClick={handleModalClose}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              共 {cityMemories.length} 条回忆
+            </p>
+            <div className="space-y-3">
+              {cityMemories.map((m) => (
+                <div
+                  key={m.id}
+                  className="bg-rose-50 rounded-xl p-4 border border-rose-100"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-semibold text-rose-500">{m.date}</span>
+                    <span className="text-xs font-medium text-rose-400 bg-white px-2 py-0.5 rounded-full">
+                      {m.author === "他" ? "💙 他" : "💗 她"}
+                    </span>
+                  </div>
+                  {m.content && (
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed mb-2">
+                      {m.content}
+                    </p>
+                  )}
+                  {m.images.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto">
+                      {m.images.map((img, i) => (
+                        <img
+                          key={i}
+                          src={img}
+                          alt=""
+                          className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <Nav />
     </div>

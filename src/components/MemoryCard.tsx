@@ -1,6 +1,7 @@
 "use client";
 
 import { Memory } from "@/lib/db";
+import { getTagStyle } from "@/lib/tags";
 
 interface Props {
   memory: Memory;
@@ -57,14 +58,17 @@ export default function MemoryCard({ memory, onEdit, onDelete }: Props) {
 
       {memory.tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {memory.tags.map((tag) => (
-            <span
-              key={tag}
-              className="text-[11px] text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full"
-            >
-              #{tag}
-            </span>
-          ))}
+          {memory.tags.map((tag) => {
+            const style = getTagStyle(tag);
+            return (
+              <span
+                key={tag}
+                className={`text-[11px] px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}
+              >
+                {style.emoji} {tag}
+              </span>
+            );
+          })}
         </div>
       )}
     </div>

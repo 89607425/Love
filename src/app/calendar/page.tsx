@@ -121,13 +121,13 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="flex flex-col flex-1 pb-20 min-h-screen relative">
+    <div className="h-dvh flex flex-col relative overflow-hidden">
       <div
         className="absolute inset-0 bg-cover bg-center bg-fixed opacity-15 pointer-events-none"
         style={{ backgroundImage: "url(/backgrounds/one.PNG)" }}
       />
 
-      <div className="relative z-10">
+      <div className="flex-1 overflow-y-auto relative z-10 pb-16">
         <header className="text-center pt-8 pb-2 px-4">
           <h1 className="text-2xl font-bold text-gray-800">📅 回忆日历</h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -192,19 +192,19 @@ export default function CalendarPage() {
             </div>
           )}
         </div>
-
-        {showForm && (
-          <MemoryForm
-            date={selectedDate || today}
-            memory={editingMemory}
-            onSave={handleSave}
-            onClose={() => {
-              setShowForm(false);
-              setEditingMemory(null);
-            }}
-          />
-        )}
       </div>
+
+      {showForm && (
+        <MemoryForm
+          date={selectedDate || today}
+          memory={editingMemory}
+          onSave={handleSave}
+          onClose={() => {
+            setShowForm(false);
+            setEditingMemory(null);
+          }}
+        />
+      )}
 
       <Nav />
     </div>

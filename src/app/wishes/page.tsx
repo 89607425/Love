@@ -55,13 +55,13 @@ export default function WishesPage() {
   const done = wishes.filter((w) => w.completed);
 
   return (
-    <div className="flex flex-col flex-1 pb-20 min-h-screen relative">
+    <div className="h-dvh flex flex-col relative overflow-hidden">
       <div
         className="absolute inset-0 bg-cover bg-center bg-fixed opacity-15 pointer-events-none"
         style={{ backgroundImage: "url(/backgrounds/four.PNG)" }}
       />
 
-      <div className="relative z-10">
+      <div className="flex-1 overflow-y-auto relative z-10 pb-16">
         <header className="text-center pt-8 pb-4 px-4">
           <h1 className="text-2xl font-bold text-gray-800">⭐ 愿望清单</h1>
           <p className="text-xs text-gray-400 mt-1">
@@ -77,78 +77,6 @@ export default function WishesPage() {
             + 添加愿望
           </button>
         </div>
-
-        {showForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-            <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-2xl p-6 animate-slide-up m-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">添加愿望</h3>
-                <button
-                  onClick={() => setShowForm(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    谁的想法
-                  </label>
-                  <div className="flex gap-2">
-                    {[
-                      { who: "他", name: "侯竣译" },
-                      { who: "她", name: "盛雨轩" },
-                    ].map(({ who, name }) => (
-                      <button
-                        key={who}
-                        type="button"
-                        onClick={() => setAuthor(who)}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                          author === who
-                            ? "bg-rose-500 text-white"
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        }`}
-                      >
-                        {who === "他" ? "💙 " : "💗 "}{name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    愿望标题
-                  </label>
-                  <input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="比如：一起去海边看日出"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-rose-300 focus:ring-2 focus:ring-rose-100 outline-none text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    备注（选填）
-                  </label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={2}
-                    placeholder="详细描述..."
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-rose-300 focus:ring-2 focus:ring-rose-100 outline-none resize-none text-sm"
-                  />
-                </div>
-                <button
-                  onClick={handleCreate}
-                  disabled={!title.trim() || submitting}
-                  className="w-full py-3 bg-rose-500 text-white rounded-xl font-medium hover:bg-rose-600 transition-colors disabled:opacity-50"
-                >
-                  {submitting ? "添加中..." : "✨ 添加愿望"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="px-4 space-y-6">
           {pending.length > 0 && (
@@ -196,6 +124,78 @@ export default function WishesPage() {
           )}
         </div>
       </div>
+
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-2xl p-6 animate-slide-up m-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">添加愿望</h3>
+              <button
+                onClick={() => setShowForm(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  谁的想法
+                </label>
+                <div className="flex gap-2">
+                  {[
+                    { who: "他", name: "侯竣译" },
+                    { who: "她", name: "盛雨轩" },
+                  ].map(({ who, name }) => (
+                    <button
+                      key={who}
+                      type="button"
+                      onClick={() => setAuthor(who)}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                        author === who
+                          ? "bg-rose-500 text-white"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {who === "他" ? "💙 " : "💗 "}{name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  愿望标题
+                </label>
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="比如：一起去海边看日出"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-rose-300 focus:ring-2 focus:ring-rose-100 outline-none text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  备注（选填）
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={2}
+                  placeholder="详细描述..."
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-rose-300 focus:ring-2 focus:ring-rose-100 outline-none resize-none text-sm"
+                />
+              </div>
+              <button
+                onClick={handleCreate}
+                disabled={!title.trim() || submitting}
+                className="w-full py-3 bg-rose-500 text-white rounded-xl font-medium hover:bg-rose-600 transition-colors disabled:opacity-50"
+              >
+                {submitting ? "添加中..." : "✨ 添加愿望"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Nav />
     </div>

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Memory } from "@/lib/db";
 import Nav from "@/components/Nav";
 import ExportButton from "@/components/ExportButton";
+import MemoryForm from "@/components/MemoryForm";
+import { getTagStyle } from "@/lib/tags";
 
 type ViewMode = "timeline" | "gallery";
 
@@ -13,12 +15,58 @@ export default function TimelinePage() {
   const [filterTag, setFilterTag] = useState("");
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
+  const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
+  const [showEditForm, setShowEditForm] = useState(false);
 
-  useEffect(() => {
+  const fetchMemories = useCallback(() => {
     fetch("/api/memories")
       .then((r) => r.json())
       .then(setMemories);
   }, []);
+
+  useEffect(() => {
+    fetchMemories();
+  }, [fetchMemories]);
+
+  const handleSave = useCallback(
+    async (data: {
+      date: string;
+      content: string;
+      images: string[];
+      tags: string[];
+      author: string;
+      location: string;
+      id?: number;
+    }) => {
+      const body = {
+        date: data.date,
+        content: data.content,
+        images: data.images,
+        tags: data.tags,
+        author: data.author,
+        location: data.location,
+      };
+      if (data.id) {
+        await fetch(`/api/memories/${data.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      }
+      setShowEditForm(false);
+      setEditingMemory(null);
+      setSelectedMemory(null);
+      fetchMemories();
+    },
+    [fetchMemories]
+  );
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("确定删除这条回忆吗？")) return;
+    await fetch(`/api/memories/${id}`, { method: "DELETE" });
+    setSelectedMemory(null);
+    fetchMemories();
+  };
 
   const allTags = useMemo(() => {
     const tags = new Set<string>();
@@ -97,7 +145,9 @@ export default function TimelinePage() {
               >
                 全部
               </button>
-              {allTags.map((tag) => (
+              {allTags.map((tag) => {
+                const style = getTagStyle(tag);
+                return (
                 <button
                   key={tag}
                   onClick={() => setFilterTag(tag === filterTag ? "" : tag)}
@@ -107,9 +157,10 @@ export default function TimelinePage() {
                       : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                   }`}
                 >
-                  #{tag}
+                  {style.emoji} {tag}
                 </button>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -229,12 +280,29 @@ export default function TimelinePage() {
                   )}
                 </div>
               </div>
-              <button
-                onClick={() => setSelectedMemory(null)}
-                className="text-gray-400 hover:text-gray-600 text-xl leading-none p-1"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setEditingMemory(selectedMemory);
+                    setShowEditForm(true);
+                  }}
+                  className="text-xs text-gray-400 hover:text-rose-500 px-2 py-1 transition-colors"
+                >
+                  编辑
+                </button>
+                <button
+                  onClick={() => handleDelete(selectedMemory.id)}
+                  className="text-xs text-gray-400 hover:text-red-500 px-2 py-1 transition-colors"
+                >
+                  删除
+                </button>
+                <button
+                  onClick={() => setSelectedMemory(null)}
+                  className="text-gray-400 hover:text-gray-600 text-xl leading-none p-1"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             <div className="px-5 py-4 space-y-4">
@@ -265,19 +333,34 @@ export default function TimelinePage() {
 
               {selectedMemory.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
-                  {selectedMemory.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-xs bg-rose-50 text-rose-500 px-2.5 py-1 rounded-full"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
+                  {selectedMemory.tags.map((tag) => {
+                    const style = getTagStyle(tag);
+                    return (
+                      <span
+                        key={tag}
+                        className={`text-xs px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}
+                      >
+                        {style.emoji} {tag}
+                      </span>
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
         </div>
+      )}
+
+      {showEditForm && editingMemory && (
+        <MemoryForm
+          date={editingMemory.date}
+          memory={editingMemory}
+          onSave={handleSave}
+          onClose={() => {
+            setShowEditForm(false);
+            setEditingMemory(null);
+          }}
+        />
       )}
 
       <Nav />

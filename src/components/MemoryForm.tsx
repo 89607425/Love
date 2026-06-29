@@ -3,6 +3,7 @@
 import { useState, useRef, useMemo } from "react";
 import { Memory } from "@/lib/db";
 import { CHINA_CITIES } from "@/lib/cities";
+import { TAG_PRESETS } from "@/lib/tags";
 
 interface Props {
   date: string;
@@ -70,7 +71,6 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
   const [existingImages, setExistingImages] = useState<string[]>(memory?.images || []);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [tags, setTags] = useState<string[]>(memory?.tags || []);
-  const [tagInput, setTagInput] = useState("");
   const [author, setAuthor] = useState(memory?.author || "他");
   const [location, setLocation] = useState(memory?.location || "");
   const [locationInput, setLocationInput] = useState(memory?.location || "");
@@ -101,16 +101,10 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
     setPendingFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const addTag = () => {
-    const trimmed = tagInput.trim();
-    if (trimmed && !tags.includes(trimmed)) {
-      setTags((prev) => [...prev, trimmed]);
-    }
-    setTagInput("");
-  };
-
-  const removeTag = (tag: string) => {
-    setTags((prev) => prev.filter((t) => t !== tag));
+  const toggleTag = (tag: string) => {
+    setTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
   };
 
   const selectLocation = (city: string) => {
@@ -302,48 +296,27 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
 
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
-              标签
+              标签（多选）
             </label>
-            <div className="flex gap-2 mb-2">
-              <input
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addTag();
-                  }
-                }}
-                placeholder="输入标签后按回车"
-                className="flex-1 px-3 py-2 rounded-xl border border-gray-200 focus:border-rose-300 focus:ring-2 focus:ring-rose-100 outline-none text-sm"
-              />
-              <button
-                type="button"
-                onClick={addTag}
-                className="px-4 py-2 bg-rose-100 text-rose-600 rounded-xl text-sm font-medium hover:bg-rose-200 transition-colors"
-              >
-                添加
-              </button>
-            </div>
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs bg-rose-50 text-rose-500 px-2.5 py-1 rounded-full flex items-center gap-1"
+            <div className="flex flex-wrap gap-2">
+              {TAG_PRESETS.map((preset) => {
+                const selected = tags.includes(preset.tag);
+                return (
+                  <button
+                    key={preset.tag}
+                    type="button"
+                    onClick={() => toggleTag(preset.tag)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-95 ${
+                      selected
+                        ? `${preset.bg} ${preset.text} ${preset.border} shadow-sm`
+                        : "bg-gray-50 text-gray-400 border-gray-200 hover:border-gray-300"
+                    }`}
                   >
-                    #{tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="hover:text-red-500"
-                    >
-                      ✕
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+                    {preset.emoji} {preset.tag}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {error && (

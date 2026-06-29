@@ -45,19 +45,19 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] pb-20 relative">
+    <div className="h-dvh flex flex-col relative overflow-hidden">
       <div
         className="absolute inset-0 bg-cover bg-center bg-fixed opacity-15 pointer-events-none"
         style={{ backgroundImage: "url(/backgrounds/three.PNG)" }}
       />
 
-      <div className="relative z-10 flex flex-col h-full">
+      <div className="relative z-10 flex flex-col flex-1">
         <header className="text-center pt-8 pb-4 px-4 shrink-0">
           <h1 className="text-2xl font-bold text-gray-800">💌 留言板</h1>
           <p className="text-xs text-gray-400 mt-1">给对方写张小纸条吧</p>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-4 py-2">
+        <div className="flex-1 overflow-y-auto px-4 py-2 pb-16">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full">
               <p className="text-4xl mb-3">💌</p>
