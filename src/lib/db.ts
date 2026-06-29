@@ -1,4 +1,5 @@
 import { neon, neonConfig } from "@neondatabase/serverless";
+import { pickHighestPriorityTag } from "@/lib/tags";
 
 neonConfig.fetchConnectionCache = true;
 
@@ -144,26 +145,42 @@ export async function getDateTags(year: number, month: number | null) {
       ? `${year + 1}-01-01`
       : `${year}-${String(month + 1).padStart(2, "0")}-01`;
     const rows = await query`SELECT date, tags FROM memories WHERE date >= ${start} AND date < ${end} ORDER BY date`;
-    const result: Record<string, string | null> = {};
+    const result: Record<string, string[] | null> = {};
+    const tagSet: Record<string, Set<string>> = {};
     for (const row of rows) {
-      if (result[String(row.date)] === undefined) {
-        const tagList = row.tags ? JSON.parse(row.tags as string) : [];
-        result[String(row.date)] = tagList.length > 0 ? tagList[0] : null;
-      }
+      const d = String(row.date);
+      if (!tagSet[d]) tagSet[d] = new Set();
+      const tagList: string[] = row.tags ? JSON.parse(row.tags as string) : [];
+      for (const t of tagList) tagSet[d].add(t);
     }
-    return result;
+    for (const d of Object.keys(tagSet)) {
+      result[d] = Array.from(tagSet[d]);
+    }
+    const final: Record<string, string | null> = {};
+    for (const d of Object.keys(result)) {
+      final[d] = pickHighestPriorityTag(result[d]!);
+    }
+    return final;
   }
   const start = `${year}-01-01`;
   const end = `${year + 1}-01-01`;
   const rows = await query`SELECT date, tags FROM memories WHERE date >= ${start} AND date < ${end} ORDER BY date`;
-  const result: Record<string, string | null> = {};
+  const result: Record<string, string[] | null> = {};
+  const tagSet: Record<string, Set<string>> = {};
   for (const row of rows) {
-    if (result[String(row.date)] === undefined) {
-      const tagList = row.tags ? JSON.parse(row.tags as string) : [];
-      result[String(row.date)] = tagList.length > 0 ? tagList[0] : null;
-    }
+    const d = String(row.date);
+    if (!tagSet[d]) tagSet[d] = new Set();
+    const tagList: string[] = row.tags ? JSON.parse(row.tags as string) : [];
+    for (const t of tagList) tagSet[d].add(t);
   }
-  return result;
+  for (const d of Object.keys(tagSet)) {
+    result[d] = Array.from(tagSet[d]);
+  }
+  const final: Record<string, string | null> = {};
+  for (const d of Object.keys(result)) {
+    final[d] = pickHighestPriorityTag(result[d]!);
+  }
+  return final;
 }
 
 export async function getMemoriesByLocation(location: string) {

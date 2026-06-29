@@ -12,7 +12,9 @@
       "Bash(git restore:*)",
       "Bash(git push)",
       "Bash(vercel whoami:*)",
-      "Bash(vercel link:*)"
+      "Bash(vercel link:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\n全页布局固定底栏、标签重构为彩色多选、时间线支持编辑删除\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

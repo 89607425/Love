@@ -12,6 +12,16 @@ export function getTagStyle(tag: string) {
   return preset || { emoji: "🏷️", bg: "bg-rose-50", text: "text-rose-500" };
 }
 
+const TAG_PRIORITY: Record<string, number> = { "讨厌你": 1, "难过": 2, "想你": 3, "开心": 4, "爱你": 5, "纪念日": 6 };
+
+export function pickHighestPriorityTag(tags: string[]): string | null {
+  if (tags.length === 0) return null;
+  if (tags.length === 1) return tags[0];
+  return tags.reduce((best, tag) =>
+    (TAG_PRIORITY[tag] || 0) > (TAG_PRIORITY[best] || 0) ? tag : best
+  );
+}
+
 export function getCalendarColor(tag: string | null | undefined): string {
   if (!tag) return "bg-rose-100 text-rose-600";
   const preset = TAG_PRESETS.find((p) => p.tag === tag);
