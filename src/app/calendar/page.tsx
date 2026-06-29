@@ -73,17 +73,19 @@ export default function CalendarPage() {
       };
 
       if (data.id) {
-        await fetch(`/api/memories/${data.id}`, {
+        const res = await fetch(`/api/memories/${data.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
+        if (!res.ok) throw new Error("保存失败");
       } else {
-        await fetch("/api/memories", {
+        const res = await fetch("/api/memories", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
+        if (!res.ok) throw new Error("保存失败");
       }
 
       setShowForm(false);

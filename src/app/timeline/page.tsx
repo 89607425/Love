@@ -47,11 +47,12 @@ export default function TimelinePage() {
         location: data.location,
       };
       if (data.id) {
-        await fetch(`/api/memories/${data.id}`, {
+        const res = await fetch(`/api/memories/${data.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
+        if (!res.ok) throw new Error("保存失败");
       }
       setShowEditForm(false);
       setEditingMemory(null);

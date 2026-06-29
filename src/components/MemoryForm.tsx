@@ -129,17 +129,21 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
       }
     }
 
-    onSave({
-      date,
-      content,
-      images: [...existingImages, ...newImageUrls],
-      tags,
-      author,
-      location: location || locationInput,
-      id: memory?.id,
-    });
-
-    setSubmitting(false);
+    try {
+      await onSave({
+        date,
+        content,
+        images: [...existingImages, ...newImageUrls],
+        tags,
+        author,
+        location: location || locationInput,
+        id: memory?.id,
+      });
+    } catch (err) {
+      setError("保存失败，请检查网络后重试");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const pendingPreviews = pendingFiles.map((f) => URL.createObjectURL(f));
