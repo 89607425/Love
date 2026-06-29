@@ -12,6 +12,7 @@ export default function TimelinePage() {
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [filterTag, setFilterTag] = useState("");
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
+  const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
 
   useEffect(() => {
     fetch("/api/memories")
@@ -127,7 +128,8 @@ export default function TimelinePage() {
                     {monthMemories.map((m) => (
                       <div
                         key={m.id}
-                        className="flex gap-3 bg-white rounded-2xl p-4 shadow-sm border border-rose-100"
+                        onClick={() => setSelectedMemory(m)}
+                        className="flex gap-3 bg-white rounded-2xl p-4 shadow-sm border border-rose-100 cursor-pointer hover:shadow-md hover:border-rose-200 active:scale-[0.98] transition-all"
                       >
                         <div className="text-center min-w-[3rem]">
                           <div className="text-lg font-bold text-rose-400">
@@ -199,6 +201,81 @@ export default function TimelinePage() {
               alt=""
               className="max-w-full max-h-[80vh] object-contain rounded-lg"
             />
+          </div>
+        )}
+
+        {selectedMemory && (
+          <div
+            className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setSelectedMemory(null)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl shadow-xl animate-slide-up"
+              style={{ overscrollBehavior: "contain" }}
+            >
+              <div className="sticky top-0 bg-white/95 backdrop-blur-sm px-5 py-4 border-b border-gray-100 flex items-center justify-between z-10">
+                <div>
+                  <div className="text-lg font-semibold text-gray-800">
+                    {selectedMemory.date}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-rose-400 bg-rose-50 px-2 py-0.5 rounded-full">
+                      {selectedMemory.author === "他" ? "💙 他" : "💗 她"}
+                    </span>
+                    {selectedMemory.location && (
+                      <span className="text-xs text-gray-400">📍 {selectedMemory.location}</span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedMemory(null)}
+                  className="text-gray-400 hover:text-gray-600 text-xl leading-none p-1"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="px-5 py-4 space-y-4">
+                {selectedMemory.content && (
+                  <div>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      {selectedMemory.content}
+                    </p>
+                  </div>
+                )}
+
+                {selectedMemory.images.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedMemory.images.map((img, i) => (
+                      <img
+                        key={i}
+                        src={img}
+                        alt=""
+                        onClick={() => {
+                          setSelectedMemory(null);
+                          setLightboxImg(img);
+                        }}
+                        className="w-full aspect-square object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {selectedMemory.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedMemory.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-xs bg-rose-50 text-rose-500 px-2.5 py-1 rounded-full"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
