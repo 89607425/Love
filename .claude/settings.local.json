@@ -7,7 +7,12 @@
       "Bash(npm run build:*)",
       "Bash(curl -sL -o /Users/houjunyi/Desktop/Love/public/china.json -w \"%{http_code} %{size_download}\" --connect-timeout 10 \"https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json\")",
       "Bash(python3 -c \"\nimport json\nwith open(''/Users/houjunyi/Desktop/Love/public/china.json'') as f:\n    data = json.load(f)\nnames = [f[''properties''][''name''] for f in data[''features'']]\nfor n in sorted(names):\n    print(n)\n\")",
-      "Bash(npm ls @neondatabase/serverless)"
+      "Bash(npm ls @neondatabase/serverless)",
+      "Bash(git add -A)",
+      "Bash(git restore:*)",
+      "Bash(git push)",
+      "Bash(vercel whoami:*)",
+      "Bash(vercel link:*)"
     ],
     "deny": [],
     "ask": []

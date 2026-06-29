@@ -19,16 +19,47 @@ interface Props {
   onClose: () => void;
 }
 
-const MAX_SIZE = 4 * 1024 * 1024;
+const MAX_SIZE = 20 * 1024 * 1024;
+const IMAGE_MAX_DIMENSION = 1200;
+const IMAGE_QUALITY = 0.75;
+
+function compressImage(dataUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > IMAGE_MAX_DIMENSION || height > IMAGE_MAX_DIMENSION) {
+        if (width > height) {
+          height = Math.round((height * IMAGE_MAX_DIMENSION) / width);
+          width = IMAGE_MAX_DIMENSION;
+        } else {
+          width = Math.round((width * IMAGE_MAX_DIMENSION) / height);
+          height = IMAGE_MAX_DIMENSION;
+        }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("Canvas 不可用")); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", IMAGE_QUALITY));
+    };
+    img.onerror = () => reject(new Error("图片加载失败"));
+    img.src = dataUrl;
+  });
+}
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     if (file.size > MAX_SIZE) {
-      reject(new Error(`图片 ${file.name} 超过 4MB，请压缩后重试`));
+      reject(new Error(`图片 ${file.name} 超过 20MB，请选择更小的图片`));
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
+    reader.onload = () => {
+      compressImage(reader.result as string).then(resolve).catch(reject);
+    };
     reader.onerror = () => reject(new Error("读取图片失败"));
     reader.readAsDataURL(file);
   });
@@ -265,7 +296,7 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
               onClick={() => fileRef.current?.click()}
               className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-rose-300 hover:text-rose-500 transition-colors"
             >
-              📷 点击选择图片 (已选 {pendingFiles.length} 张，单张不超过 4MB)
+              📷 点击选择图片 (已选 {pendingFiles.length} 张，自动压缩)
             </button>
           </div>
 
