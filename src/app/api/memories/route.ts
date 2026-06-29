@@ -8,6 +8,7 @@ import {
   getDatesWithMemoriesByYear,
   getMemoriesByLocation,
   getAllLocationsWithMemories,
+  getDateTags,
 } from "@/lib/db";
 
 function cached(data: unknown, maxAge = 60) {
@@ -22,6 +23,7 @@ export async function GET(req: NextRequest) {
   const month = searchParams.get("month");
   const date = searchParams.get("date");
   const datesOnly = searchParams.get("datesOnly");
+  const dateTags = searchParams.get("dateTags");
   const location = searchParams.get("location");
   const locationsOnly = searchParams.get("locationsOnly");
 
@@ -43,6 +45,11 @@ export async function GET(req: NextRequest) {
   if (datesOnly && year && month) {
     const dates = await getDatesWithMemories(Number(year), Number(month));
     return cached(dates, 30);
+  }
+
+  if (dateTags && year) {
+    const tags = await getDateTags(Number(year), month ? Number(month) : null);
+    return cached(tags, 60);
   }
 
   if (date) {

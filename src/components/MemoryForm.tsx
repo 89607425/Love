@@ -101,10 +101,8 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
     setPendingFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const toggleTag = (tag: string) => {
-    setTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+  const selectTag = (tag: string) => {
+    setTags((prev) => (prev.includes(tag) ? [] : [tag]));
   };
 
   const selectLocation = (city: string) => {
@@ -296,7 +294,7 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
 
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
-              标签（多选）
+              标签
             </label>
             <div className="flex flex-wrap gap-2">
               {TAG_PRESETS.map((preset) => {
@@ -305,7 +303,7 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
                   <button
                     key={preset.tag}
                     type="button"
-                    onClick={() => toggleTag(preset.tag)}
+                    onClick={() => selectTag(preset.tag)}
                     className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-95 ${
                       selected
                         ? `${preset.bg} ${preset.text} ${preset.border} shadow-sm`

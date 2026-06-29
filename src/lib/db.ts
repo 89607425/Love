@@ -136,6 +136,36 @@ export async function getDatesWithMemoriesByYear(year: number) {
   return rows.map((r) => String(r.date));
 }
 
+export async function getDateTags(year: number, month: number | null) {
+  await initDb();
+  if (month) {
+    const start = `${year}-${String(month).padStart(2, "0")}-01`;
+    const end = month === 12
+      ? `${year + 1}-01-01`
+      : `${year}-${String(month + 1).padStart(2, "0")}-01`;
+    const rows = await query`SELECT date, tags FROM memories WHERE date >= ${start} AND date < ${end} ORDER BY date`;
+    const result: Record<string, string | null> = {};
+    for (const row of rows) {
+      if (result[String(row.date)] === undefined) {
+        const tagList = row.tags ? JSON.parse(row.tags as string) : [];
+        result[String(row.date)] = tagList.length > 0 ? tagList[0] : null;
+      }
+    }
+    return result;
+  }
+  const start = `${year}-01-01`;
+  const end = `${year + 1}-01-01`;
+  const rows = await query`SELECT date, tags FROM memories WHERE date >= ${start} AND date < ${end} ORDER BY date`;
+  const result: Record<string, string | null> = {};
+  for (const row of rows) {
+    if (result[String(row.date)] === undefined) {
+      const tagList = row.tags ? JSON.parse(row.tags as string) : [];
+      result[String(row.date)] = tagList.length > 0 ? tagList[0] : null;
+    }
+  }
+  return result;
+}
+
 export async function getMemoriesByLocation(location: string) {
   await initDb();
   const rows = await query`SELECT * FROM memories WHERE location = ${location} ORDER BY date DESC, created_at DESC`;

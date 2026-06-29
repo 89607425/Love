@@ -16,6 +16,7 @@ export default function CalendarPage() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [viewMode, setViewMode] = useState<"month" | "year">("month");
   const [datesWithMemories, setDatesWithMemories] = useState<string[]>([]);
+  const [dateTags, setDateTags] = useState<Record<string, string | null>>({});
   const [selectedDate, setSelectedDate] = useState("");
   const [memories, setMemories] = useState<Memory[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -33,6 +34,9 @@ export default function CalendarPage() {
     fetch(`/api/memories?datesOnly=true&year=${year}&month=${month}`)
       .then((r) => r.json())
       .then(setDatesWithMemories);
+    fetch(`/api/memories?dateTags=true&year=${year}&month=${month}`)
+      .then((r) => r.json())
+      .then(setDateTags);
   }, [year, month]);
 
   const handleSelectDate = (date: string) => {
@@ -88,6 +92,9 @@ export default function CalendarPage() {
       fetch(`/api/memories?datesOnly=true&year=${year}&month=${month}`)
         .then((r) => r.json())
         .then(setDatesWithMemories);
+      fetch(`/api/memories?dateTags=true&year=${year}&month=${month}`)
+        .then((r) => r.json())
+        .then(setDateTags);
 
       if (selectedDate) {
         fetch(`/api/memories?date=${selectedDate}`)
@@ -105,6 +112,9 @@ export default function CalendarPage() {
     fetch(`/api/memories?datesOnly=true&year=${year}&month=${month}`)
       .then((r) => r.json())
       .then(setDatesWithMemories);
+    fetch(`/api/memories?dateTags=true&year=${year}&month=${month}`)
+      .then((r) => r.json())
+      .then(setDateTags);
 
     if (selectedDate) {
       fetch(`/api/memories?date=${selectedDate}`)
@@ -154,6 +164,7 @@ export default function CalendarPage() {
             viewMode={viewMode}
             datesWithMemories={datesWithMemories}
             selectedDate={selectedDate}
+            dateTags={dateTags}
             onSelectDate={handleSelectDate}
             onMonthChange={handleMonthChange}
             onViewModeChange={setViewMode}

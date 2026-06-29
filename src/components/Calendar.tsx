@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getCalendarColor } from "@/lib/tags";
 
 interface Props {
   year: number;
@@ -8,6 +9,7 @@ interface Props {
   viewMode: "month" | "year";
   datesWithMemories: string[];
   selectedDate: string;
+  dateTags: Record<string, string | null>;
   onSelectDate: (date: string) => void;
   onMonthChange: (year: number, month: number) => void;
   onViewModeChange: (mode: "month" | "year") => void;
@@ -26,6 +28,7 @@ export default function Calendar({
   viewMode,
   datesWithMemories,
   selectedDate,
+  dateTags,
   onSelectDate,
   onMonthChange,
   onViewModeChange,
@@ -78,6 +81,7 @@ export default function Calendar({
     const isSelected = dateStr === selectedDate;
     const hasMem = hasMemory(day);
 
+    const tagColor = hasMem ? getCalendarColor(dateTags[dateStr]) : "";
     cells.push(
       <button
         key={day}
@@ -85,10 +89,12 @@ export default function Calendar({
         className={`relative w-full aspect-square flex items-center justify-center rounded-xl text-sm font-medium transition-all ${
           isSelected
             ? "bg-rose-500 text-white shadow-lg shadow-rose-200 scale-105"
+            : hasMem && dateTags[dateStr]
+            ? `${tagColor} hover:opacity-80`
             : hasMem
-            ? "bg-rose-200 text-rose-700 hover:bg-rose-300"
+            ? "bg-rose-100 text-rose-600 hover:bg-rose-200"
             : isToday
-            ? "bg-rose-100 text-rose-600"
+            ? "bg-yellow-100 text-yellow-700"
             : "hover:bg-rose-50 text-gray-700"
         }`}
       >
@@ -165,6 +171,8 @@ export default function Calendar({
               className={`p-3 rounded-xl text-center transition-colors ${
                 count > 0
                   ? "bg-rose-100 hover:bg-rose-200 text-rose-700"
+                  : (year === new Date().getFullYear() && m === new Date().getMonth() + 1)
+                  ? "bg-yellow-100 text-yellow-700"
                   : "bg-gray-50 hover:bg-gray-100 text-gray-500"
               }`}
             >
