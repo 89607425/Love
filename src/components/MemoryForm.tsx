@@ -77,6 +77,7 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [fileKey, setFileKey] = useState(0);
   const locationRef = useRef<HTMLDivElement>(null);
 
   const locationSuggestions = useMemo(() => {
@@ -89,7 +90,7 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     setPendingFiles((prev) => [...prev, ...Array.from(files)]);
-    e.target.value = "";
+    setFileKey((k) => k + 1);
   };
 
   const removeExistingImage = (idx: number) => {
@@ -279,7 +280,8 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
               </div>
             )}
             <input
-              id="file-input"
+              key={fileKey}
+              id={`file-input-${fileKey}`}
               type="file"
               accept="image/*"
               multiple
@@ -287,7 +289,7 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
               className="sr-only"
             />
             <label
-              htmlFor="file-input"
+              htmlFor={`file-input-${fileKey}`}
               className="block w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 text-center hover:border-rose-300 hover:text-rose-500 transition-colors cursor-pointer"
             >
               📷 点击选择图片 (已选 {pendingFiles.length} 张，自动压缩)
