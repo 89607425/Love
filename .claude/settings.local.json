@@ -14,7 +14,8 @@
       "Bash(vercel whoami:*)",
       "Bash(vercel link:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\n全页布局固定底栏、标签重构为彩色多选、时间线支持编辑删除\nEOF\n)\")"
+      "Bash(git commit -m \"$(cat <<''EOF''\n全页布局固定底栏、标签重构为彩色多选、时间线支持编辑删除\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\n愿望单：修复复选框显示数字0、乐观更新、创建错误检查\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

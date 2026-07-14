@@ -24,11 +24,16 @@ export default function WishesPage() {
   const handleCreate = async () => {
     if (!title.trim() || submitting) return;
     setSubmitting(true);
-    await fetch("/api/wishes", {
+    const res = await fetch("/api/wishes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: title.trim(), description, author }),
     });
+    if (!res.ok) {
+      alert("创建失败，请重试");
+      setSubmitting(false);
+      return;
+    }
     setTitle("");
     setDescription("");
     setShowForm(false);
@@ -37,12 +42,26 @@ export default function WishesPage() {
   };
 
   const handleToggle = async (wish: Wish) => {
-    await fetch(`/api/wishes/${wish.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ completed: wish.completed ? 0 : 1 }),
-    });
-    fetchWishes();
+    const newCompleted = wish.completed ? 0 : 1;
+    setWishes((prev) =>
+      prev.map((w) =>
+        w.id === wish.id ? { ...w, completed: newCompleted } : w
+      )
+    );
+    try {
+      const res = await fetch(`/api/wishes/${wish.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: newCompleted }),
+      });
+      if (!res.ok) throw new Error("更新失败");
+    } catch {
+      setWishes((prev) =>
+        prev.map((w) =>
+          w.id === wish.id ? { ...w, completed: wish.completed } : w
+        )
+      );
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -227,7 +246,7 @@ function WishCard({
             : "border-gray-300 hover:border-emerald-400"
         }`}
       >
-        {wish.completed && <span className="text-white text-xs">✓</span>}
+        {wish.completed ? <span className="text-white text-xs">✓</span> : null}
       </button>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
