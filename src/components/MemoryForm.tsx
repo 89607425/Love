@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo } from "react";
 import { Memory } from "@/lib/db";
-import { CHINA_CITIES } from "@/lib/cities";
+import { resolveCity, searchCities } from "@/lib/cities";
 import { TAG_PRESETS } from "@/lib/tags";
 
 interface Props {
@@ -81,10 +81,11 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
   const locationRef = useRef<HTMLDivElement>(null);
 
   const locationSuggestions = useMemo(() => {
-    if (!locationInput.trim()) return [] as string[];
-    const q = locationInput.trim().toLowerCase();
-    return CHINA_CITIES.filter((c) => c.toLowerCase().includes(q)).slice(0, 8);
+    return searchCities(locationInput, 8);
   }, [locationInput]);
+
+  const unresolvable =
+    locationInput.trim().length > 0 && !resolveCity(locationInput.trim());
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -225,17 +226,25 @@ export default function MemoryForm({ date, memory, onSave, onClose }: Props) {
             />
             {showLocationSuggestions && locationSuggestions.length > 0 && (
               <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto">
-                {locationSuggestions.map((city) => (
+                {locationSuggestions.map((hit) => (
                   <button
-                    key={city}
+                    key={hit.city.name}
                     type="button"
-                    onMouseDown={() => selectLocation(city)}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                    onMouseDown={() => selectLocation(hit.city.name)}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-600 transition-colors flex items-baseline gap-2"
                   >
-                    📍 {city}
+                    <span>📍 {hit.city.name}</span>
+                    <span className="text-[10px] text-gray-400">
+                      {hit.city.province}
+                    </span>
                   </button>
                 ))}
               </div>
+            )}
+            {unresolvable && (
+              <p className="mt-1 text-[11px] text-gray-400">
+                自由输入也可以保存，但这个地点暂时无法在足迹地图上打点
+              </p>
             )}
           </div>
 

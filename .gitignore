@@ -46,3 +46,9 @@ love.db-*
 
 # uploads
 public/uploads/*
+
+# 本地体检脚本临时产物
+/.tmp-dryrun
+
+# 本地体检脚本临时产物
+/.tmp-dryrun

@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "cities:gen": "node scripts/gen-cities.mjs",
+    "cities:dryrun": "node scripts/dry-run-locations.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -23,6 +25,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "pinyin-pro": "^3.29.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
