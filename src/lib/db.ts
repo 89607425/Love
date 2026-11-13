@@ -266,7 +266,7 @@ export interface Message {
 
 export async function getMessages() {
   await initDb();
-  const rows = await query`SELECT * FROM messages ORDER BY created_at DESC`;
+  const rows = await query`SELECT * FROM messages ORDER BY created_at ASC`;
   return rows.map((r) => row<Message>(r));
 }
 

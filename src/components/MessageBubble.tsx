@@ -30,9 +30,10 @@ export default function MessageBubble({ content, author, created_at, onDelete }:
           }`}
         >
           <p className="whitespace-pre-wrap break-words">{content}</p>
+          {/* 触屏没有 hover，移动端常显（弱化）；桌面端 hover 才出现 */}
           <button
             onClick={onDelete}
-            className="absolute -top-2 -right-2 w-5 h-5 bg-red-400 text-white rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+            className="absolute -top-2 -right-2 w-5 h-5 bg-red-400 text-white rounded-full text-[10px] flex items-center justify-center opacity-40 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-red-500"
           >
             ✕
           </button>

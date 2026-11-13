@@ -13,7 +13,7 @@ export default function MessagesPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const fetchMessages = async () => {
-    const res = await fetch("/api/messages");
+    const res = await fetch("/api/messages", { cache: "no-store" });
     setMessages(await res.json());
   };
 
@@ -28,14 +28,23 @@ export default function MessagesPage() {
   const handleSend = async () => {
     if (!content.trim() || submitting) return;
     setSubmitting(true);
-    await fetch("/api/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: content.trim(), author }),
-    });
-    setContent("");
-    setSubmitting(false);
-    fetchMessages();
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: content.trim(), author }),
+      });
+      if (res.ok) {
+        const message: Message = await res.json();
+        // 直接把返回的新消息追加进去，避免 GET 缓存导致新消息延迟出现
+        setMessages((prev) =>
+          prev.some((m) => m.id === message.id) ? prev : [...prev, message]
+        );
+        setContent("");
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -51,13 +60,15 @@ export default function MessagesPage() {
         style={{ backgroundImage: "url(/backgrounds/three.PNG)" }}
       />
 
-      <div className="relative z-10 flex flex-col flex-1">
+      {/* pb-16 给底部固定导航留出 64px，输入栏由此进入正常文档流，高度链条完整 */}
+      <div className="relative z-10 flex flex-col flex-1 min-h-0 pb-16">
         <header className="text-center pt-8 pb-4 px-4 shrink-0">
           <h1 className="text-2xl font-bold text-gray-800">💌 留言板</h1>
           <p className="text-xs text-gray-400 mt-1">给对方写张小纸条吧</p>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-4 py-2 pb-44">
+        {/* min-h-0 是关键：没有它 flex 子项会被内容撑开，overflow-y-auto 失效 */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-2">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full">
               <p className="text-4xl mb-3">💌</p>
@@ -77,51 +88,51 @@ export default function MessagesPage() {
           )}
           <div ref={bottomRef} />
         </div>
-      </div>
 
-      <div className="fixed bottom-16 left-0 right-0 z-20 px-4 py-3 bg-white/90 backdrop-blur-md border-t border-rose-100">
-        <div className="flex gap-2 mb-2">
-          <button
-            onClick={() => setAuthor("他")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              author === "他"
-                ? "bg-rose-100 text-rose-600"
-                : "bg-gray-100 text-gray-500"
-            }`}
-          >
-            💙 侯竣译
-          </button>
-          <button
-            onClick={() => setAuthor("她")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              author === "她"
-                ? "bg-rose-100 text-rose-600"
-                : "bg-gray-100 text-gray-500"
-            }`}
-          >
-            💗 盛雨轩
-          </button>
-        </div>
-        <div className="flex gap-2">
-          <input
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder="写点什么..."
-            className="flex-1 px-4 py-2.5 rounded-full border border-gray-200 focus:border-rose-300 focus:ring-2 focus:ring-rose-100 outline-none text-sm"
-          />
-          <button
-            onClick={handleSend}
-            disabled={!content.trim() || submitting}
-            className="px-5 py-2.5 bg-rose-500 text-white rounded-full font-medium hover:bg-rose-600 transition-colors disabled:opacity-50 shrink-0"
-          >
-            {submitting ? "📨" : "发送"}
-          </button>
+        <div className="shrink-0 px-4 py-3 bg-white/90 backdrop-blur-md border-t border-rose-100">
+          <div className="flex gap-2 mb-2">
+            <button
+              onClick={() => setAuthor("他")}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                author === "他"
+                  ? "bg-rose-100 text-rose-600"
+                  : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              💙 侯竣译
+            </button>
+            <button
+              onClick={() => setAuthor("她")}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                author === "她"
+                  ? "bg-rose-100 text-rose-600"
+                  : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              💗 盛雨轩
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <input
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="写点什么..."
+              className="flex-1 px-4 py-2.5 rounded-full border border-gray-200 focus:border-rose-300 focus:ring-2 focus:ring-rose-100 outline-none text-sm"
+            />
+            <button
+              onClick={handleSend}
+              disabled={!content.trim() || submitting}
+              className="px-5 py-2.5 bg-rose-500 text-white rounded-full font-medium hover:bg-rose-600 transition-colors disabled:opacity-50 shrink-0"
+            >
+              {submitting ? "📨" : "发送"}
+            </button>
+          </div>
         </div>
       </div>
 
