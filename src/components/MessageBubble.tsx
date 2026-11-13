@@ -36,7 +36,18 @@ export default function MessageBubble({
   replyTo,
   onLongPress,
 }: Props) {
-  const date = created_at.slice(0, 16).replace("T", " ");
+  // created_at 是 UTC ISO 字符串（服务端时区），必须做时区转换再显示；
+  // 固定 Asia/Shanghai，不跟随设备时区，两人在哪看都是北京时间
+  const tz = { timeZone: "Asia/Shanghai" } as const;
+  const date =
+    new Date(created_at).toLocaleDateString("en-CA", tz) + // "2026-11-14"
+    " " +
+    new Date(created_at).toLocaleTimeString("zh-CN", {
+      ...tz,
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    });
   const isHer = author === "她";
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
