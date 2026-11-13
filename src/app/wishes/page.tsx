@@ -77,7 +77,7 @@ export default function WishesPage() {
     <div className="h-dvh flex flex-col relative overflow-hidden">
       <div
         className="absolute inset-0 bg-cover bg-center bg-fixed opacity-15 pointer-events-none"
-        style={{ backgroundImage: "url(/backgrounds/four.PNG)" }}
+        style={{ backgroundImage: "url(/backgrounds/four.webp)" }}
       />
 
       <div className="flex-1 overflow-y-auto relative z-10 pb-16">

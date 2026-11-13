@@ -11,9 +11,10 @@ import {
   getDateTags,
 } from "@/lib/db";
 
-function cached(data: unknown, maxAge = 60) {
+function cached(data: unknown) {
+  // 私人数据：不进 CDN/浏览器缓存，避免增删改后读到旧列表
   return NextResponse.json(data, {
-    headers: { "Cache-Control": `public, max-age=${maxAge}, stale-while-revalidate=300` },
+    headers: { "Cache-Control": "private, no-store" },
   });
 }
 
@@ -29,41 +30,41 @@ export async function GET(req: NextRequest) {
 
   if (locationsOnly) {
     const locs = await getAllLocationsWithMemories();
-    return cached(locs, 120);
+    return cached(locs);
   }
 
   if (location) {
     const memories = await getMemoriesByLocation(location);
-    return cached(memories, 60);
+    return cached(memories);
   }
 
   if (datesOnly && year && !month) {
     const dates = await getDatesWithMemoriesByYear(Number(year));
-    return cached(dates, 60);
+    return cached(dates);
   }
 
   if (datesOnly && year && month) {
     const dates = await getDatesWithMemories(Number(year), Number(month));
-    return cached(dates, 30);
+    return cached(dates);
   }
 
   if (dateTags && year) {
     const tags = await getDateTags(Number(year), month ? Number(month) : null);
-    return cached(tags, 60);
+    return cached(tags);
   }
 
   if (date) {
     const memories = await getMemoriesByDate(date);
-    return cached(memories, 30);
+    return cached(memories);
   }
 
   if (year && month) {
     const memories = await getMemoriesByMonth(Number(year), Number(month));
-    return cached(memories, 60);
+    return cached(memories);
   }
 
   const memories = await getAllMemories();
-  return cached(memories, 60);
+  return cached(memories);
 }
 
 export async function POST(req: NextRequest) {

@@ -1,42 +1,84 @@
 "use client";
 
-import { useState } from "react";
+import { useRef } from "react";
+
+export interface ReplyPreview {
+  author: string;
+  content: string;
+}
 
 interface Props {
   content: string;
   author: string;
   created_at: string;
-  onDelete: () => void;
+  replyTo?: ReplyPreview | null;
+  onLongPress: () => void;
 }
 
-export default function MessageBubble({ content, author, created_at, onDelete }: Props) {
+/** 微信式引用块：点击可跳回原留言（由父层处理），这里只负责展示 */
+function QuoteBlock({ replyTo }: { replyTo: ReplyPreview }) {
+  return (
+    <div className="mb-1.5 rounded-lg bg-black/5 px-2.5 py-1.5 border-l-2 border-current/30">
+      <p className="text-[11px] font-medium opacity-70">
+        {replyTo.author === "她" ? "💗 盛雨轩" : "💙 侯竣译"}
+      </p>
+      <p className="text-[11px] opacity-60 line-clamp-2 break-all">
+        {replyTo.content}
+      </p>
+    </div>
+  );
+}
+
+export default function MessageBubble({
+  content,
+  author,
+  created_at,
+  replyTo,
+  onLongPress,
+}: Props) {
   const date = created_at.slice(0, 16).replace("T", " ");
   const isHer = author === "她";
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const startPress = () => {
+    timer.current = setTimeout(() => onLongPress(), 500);
+  };
+  const cancelPress = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  };
 
   return (
     <div className={`flex ${isHer ? "justify-end" : "justify-start"} mb-3`}>
       <div className="max-w-[75%]">
-        <div className={`flex items-center gap-1.5 mb-1 px-1 ${isHer ? "justify-end" : "justify-start"}`}>
+        <div
+          className={`flex items-center gap-1.5 mb-1 px-1 ${
+            isHer ? "justify-end" : "justify-start"
+          }`}
+        >
           <span className="text-[10px] font-medium text-gray-500">
             {isHer ? "💗 盛雨轩" : "💙 侯竣译"}
           </span>
           <span className="text-[10px] text-gray-400">{date}</span>
         </div>
+        {/* 长按 500ms 弹出操作菜单；桌面端右键等效；select-none 防止长按触发系统选字 */}
         <div
-          className={`relative group px-4 py-2.5 rounded-2xl text-sm ${
+          onPointerDown={startPress}
+          onPointerUp={cancelPress}
+          onPointerLeave={cancelPress}
+          onPointerCancel={cancelPress}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            onLongPress();
+          }}
+          className={`relative px-4 py-2.5 rounded-2xl text-sm select-none cursor-pointer active:scale-[0.98] transition-transform ${
             isHer
               ? "bg-pink-100 text-pink-800 rounded-br-md"
               : "bg-blue-100 text-blue-800 rounded-bl-md"
           }`}
         >
+          {replyTo && <QuoteBlock replyTo={replyTo} />}
           <p className="whitespace-pre-wrap break-words">{content}</p>
-          {/* 触屏没有 hover，移动端常显（弱化）；桌面端 hover 才出现 */}
-          <button
-            onClick={onDelete}
-            className="absolute -top-2 -right-2 w-5 h-5 bg-red-400 text-white rounded-full text-[10px] flex items-center justify-center opacity-40 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-red-500"
-          >
-            ✕
-          </button>
         </div>
       </div>
     </div>

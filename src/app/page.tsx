@@ -19,7 +19,7 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-screen flex items-center justify-center bg-cover bg-center px-6"
-      style={{ backgroundImage: "url(/backgrounds/two.PNG)" }}
+      style={{ backgroundImage: "url(/backgrounds/two.webp)" }}
     >
       <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-xl p-8 w-full max-w-sm">
         <div className="text-center mb-6">

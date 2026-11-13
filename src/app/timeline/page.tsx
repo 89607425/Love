@@ -102,7 +102,7 @@ export default function TimelinePage() {
     <div className="h-dvh flex flex-col relative overflow-hidden">
       <div
         className="absolute inset-0 bg-cover bg-center bg-fixed opacity-15 pointer-events-none"
-        style={{ backgroundImage: "url(/backgrounds/two.PNG)" }}
+        style={{ backgroundImage: "url(/backgrounds/two.webp)" }}
       />
 
       <div className="flex-1 overflow-y-auto relative z-10 pb-16">
@@ -206,7 +206,7 @@ export default function TimelinePage() {
                           {m.images.length > 0 && (
                             <div className="flex gap-1.5 mt-2 overflow-x-auto">
                               {m.images.map((img, i) => (
-                                <img
+                                <img loading="lazy" decoding="async"
                                   key={i}
                                   src={img}
                                   alt=""
@@ -228,7 +228,7 @@ export default function TimelinePage() {
           ) : (
             <div className="columns-2 gap-2 space-y-2">
               {allImages.map((img, i) => (
-                <img
+                <img loading="lazy" decoding="async"
                   key={i}
                   src={img.src}
                   alt=""
@@ -318,7 +318,7 @@ export default function TimelinePage() {
               {selectedMemory.images.length > 0 && (
                 <div className="grid grid-cols-2 gap-2">
                   {selectedMemory.images.map((img, i) => (
-                    <img
+                    <img loading="lazy" decoding="async"
                       key={i}
                       src={img}
                       alt=""

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWishes, createWish } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const wishes = await getWishes();
   return NextResponse.json(wishes, {
-    headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" },
+    headers: { "Cache-Control": "private, no-store" },
   });
 }
 

@@ -43,8 +43,14 @@ export async function initDb() {
     id SERIAL PRIMARY KEY,
     content TEXT NOT NULL DEFAULT '',
     author TEXT NOT NULL DEFAULT '他',
+    reply_to INTEGER REFERENCES messages(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
+  try {
+    await query`ALTER TABLE messages ADD COLUMN reply_to INTEGER REFERENCES messages(id) ON DELETE SET NULL`;
+  } catch {
+    // Column already exists
+  }
   await query`CREATE TABLE IF NOT EXISTS wishes (
     id SERIAL PRIMARY KEY,
     title TEXT NOT NULL DEFAULT '',
@@ -261,6 +267,7 @@ export interface Message {
   id: number;
   content: string;
   author: string;
+  reply_to?: number | null;
   created_at: string;
 }
 
@@ -270,9 +277,16 @@ export async function getMessages() {
   return rows.map((r) => row<Message>(r));
 }
 
-export async function createMessage(data: { content: string; author: string }) {
+export async function createMessage(data: {
+  content: string;
+  author: string;
+  replyTo?: number | null;
+}) {
   await initDb();
-  const rows = await query`INSERT INTO messages (content, author) VALUES (${data.content}, ${data.author}) RETURNING *`;
+  const rows = await query`
+    INSERT INTO messages (content, author, reply_to)
+    VALUES (${data.content}, ${data.author}, ${data.replyTo ?? null})
+    RETURNING *`;
   return row<Message>(rows[0]);
 }
 

@@ -94,7 +94,7 @@ export default function FootprintsPage() {
     <div className="h-dvh flex flex-col relative overflow-hidden">
       <div
         className="absolute inset-0 bg-cover bg-center bg-fixed opacity-10 pointer-events-none"
-        style={{ backgroundImage: "url(/backgrounds/one.PNG)" }}
+        style={{ backgroundImage: "url(/backgrounds/one.webp)" }}
       />
 
       <div className="flex-1 overflow-y-auto relative z-10 pb-16">
@@ -254,7 +254,7 @@ export default function FootprintsPage() {
                   {m.images.length > 0 && (
                     <div className="flex gap-2 overflow-x-auto">
                       {m.images.map((img, i) => (
-                        <img
+                        <img loading="lazy" decoding="async"
                           key={i}
                           src={img}
                           alt=""

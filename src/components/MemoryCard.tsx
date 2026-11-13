@@ -46,7 +46,7 @@ export default function MemoryCard({ memory, onEdit, onDelete }: Props) {
       {memory.images.length > 0 && (
         <div className="grid gap-2 mb-3">
           {memory.images.map((img, idx) => (
-            <img
+            <img loading="lazy" decoding="async"
               key={idx}
               src={img}
               alt=""
